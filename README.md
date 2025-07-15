@@ -25,9 +25,13 @@ Meta-Agent is a Kotlin framework for **generative AI agent creation**. It uses L
 ## ✨ Features
 
 ✅ Prompt-driven agent code generation using Embabel Agent APIs
+
 ✅ MCP (Model Context Protocol) structured input  
+
 ✅ Dynamic tool discovery  
-✅ Spring Boot REST API server  
+
+✅ Spring Boot REST API server 
+
 ✅ Example projects and demos  
 
 ---
@@ -37,8 +41,11 @@ Meta-Agent is a Kotlin framework for **generative AI agent creation**. It uses L
 This is a **multi-module Gradle project**:
 
 meta-agent/
+
 ├── meta-agent-core/ # Core framework: LLM abstractions, MCP classes, code generation logic
+
 ├── meta-agent-service/ # Spring Boot app: REST API for code generation
+
 ├── meta-agent-examples/ # Example agents, generated code samples, usage tutorials
 
 
@@ -50,11 +57,11 @@ meta-agent/
 Contains:
 - `MetaAgent`: main class for prompt-driven code generation
 - `LLMClient`: pluggable interface to call any LLM provider thru Embabel Agent API
-- `AgentContext`: MCP data class
+- `AgentContext`: agent generation context data class
 - `ToolRegistry`: dynamic tool discovery
 - Prompt templates and utilities
 
-Use this module **standalone** in other Kotlin applications or libraries.
+Use this module in other Kotlin applications or libraries.
 
 ---
 
@@ -62,7 +69,7 @@ Use this module **standalone** in other Kotlin applications or libraries.
 > **Spring Boot REST API**
 
 Features:
-- REST endpoint to accept MCP JSON and return generated code
+- REST endpoint to accept JSON and return generated code
 - Configurable via `application.yml` (`OpenAI` or other providers)
 - Can be deployed as a microservice
 
@@ -70,7 +77,7 @@ Example API call:
 
 POST /generate
 Content-Type: application/json
-
+```
 {
 "task": "restaurant_reservation",
 "location": "Berlin",
@@ -92,4 +99,4 @@ val context = AgentContext(
 
 val generatedCode = metaAgent.generateAgentCodeFromContext(context)
 println(generatedCode)
-
+```
