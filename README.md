@@ -40,8 +40,8 @@ Meta-Agent demonstrates an **Agent-Native Recursive Architecture** where the met
   - [🎯 Unique Value Proposition](#-unique-value-proposition)
 - [🧩 Project Structure](#-project-structure)
 - [🔧 Meta-Agent Core Components](#-meta-agent-core-components)
-  - [MetaAgentService Generation Engine](#metaagentservice-generation-engine)
   - [MetaAgent Core Engine](#metaagent-core-engine)
+  - [MetaAgentService Generation Engine](#metaagentservice-generation-engine)
   - [Interactive Shell Application](#interactive-shell-application)
   - [Architecture Summary](#architecture-summary)
 - [⚙️ Model Provider Configuration](#️-model-provider-configuration)
@@ -337,6 +337,85 @@ The Meta-Agent architecture consists of **two main layers** within the `meta-age
 
 Both components live in the `meta-agent-service` module as a single Spring Boot application.
 
+### MetaAgent Core Engine
+
+**Key Innovation:** The **MetaAgent itself IS a real agent** using `@Agent` and `@Action` annotations - the same patterns as the agents it generates.
+
+```kotlin
+@Agent(
+    name = "MetaAgent",
+    description = "Generates other agents through goal-oriented planning",
+    planner = Planner.GOAP
+)
+@Component
+class MetaAgent {
+    
+    @AchievesGoal(description = "Create agent specification from user input")
+    @Action(
+        cost = 0.4, value = 0.9,
+        toolGroups = ["llm", "design"]
+    )
+    fun createAgentSpecification(userInput: UserInput): AgentSpecification {
+        return try {
+            // LLM-based extraction for structured specification
+            processFreeTextInput(userInput)
+        } catch (e: Exception) {
+            // Semantic extraction fallback with smart parsing
+            createFallbackSpecification(userInput)
+        }
+    }
+    
+    @AchievesGoal(description = "Generate complete agent code with annotations")
+    @Action(
+        cost = 0.5, value = 1.0,
+        toolGroups = ["codegen", "templates"]
+    )
+    fun generateAgent(specification: AgentSpecification): GeneratedAgentModel {
+        logger.info("MetaAgent core generation started for: ${specification.domain}")
+        
+        // Step 1: Transform specification to generation context
+        val context = createGenerationContext(specification)
+        
+        // Step 2: Discover and analyze relevant tools
+        val tools = discoverTools(specification)
+        
+        // Step 3: Engineer sophisticated prompts
+        val prompts = promptEngineeringService.buildPrompts(specification, tools)
+        
+        // Step 4: Generate code using LLM
+        val generatedCode = generateCodeWithLLM(prompts, specification)
+        
+        // Step 5: Validate and refine
+        val validatedCode = validator.validateAndRefine(generatedCode)
+        
+        // Step 6: Create complete agent model
+        return GeneratedAgentModel(
+            agent = createAgentFromSpecification(specification),
+            packageName = specification.suggestedPackageName(),
+            discoveredTools = tools,
+            generationMetadata = GenerationMetadata(),
+            generationContext = context
+        )
+    }
+    
+    @Action(cost = 0.7, value = 0.8, toolGroups = ["web", "apis", "rag"])
+    fun discoverTools(specification: AgentSpecification): List<DiscoveredTool> { ... }
+    
+    @Action(cost = 0.4, value = 0.7, toolGroups = ["aop", "audit"])
+    fun makeAuditAware(agent: GeneratedAgentModel): GeneratedAgentModel { ... }
+    
+    private fun generateCodeWithLLM(prompts: PromptContext, specification: AgentSpecification): CodeResult {
+        val llm = modelProvider.defaultLlm()
+        
+        // Use LLM to generate agent code with embabel-agent-api annotations
+        return llm.createObject(
+            prompts.masterPrompt,
+            CodeResult::class.java
+        )
+    }
+}
+```
+
 ### MetaAgentService Generation Engine
 
 The **MetaAgentService** is the core business logic service that handles all agent generation functionality. It runs within the Spring Boot application and is used by the shell commands. The service orchestrates the actual **MetaAgent** core engine.
@@ -523,70 +602,6 @@ data class GeneratedAgentModel(
     val projectStructure: GeneratedAgentProjectStructure,    // pom.xml, config files
     val testCode: String? = null,              // Generated tests
 )
-```
-
-### MetaAgent Core Engine
-
-The **MetaAgent** is the core generation engine that performs the actual LLM-based agent generation. It's used by the MetaAgentService.
-
-```kotlin
-// meta-agent-core/src/main/kotlin/com/embabel/metaagent/core/MetaAgent.kt
-@Component
-class MetaAgent(
-    private val modelProvider: ModelProvider,
-    private val templateEngine: TemplateEngine,
-    private val validator: KotlinValidator,
-    private val toolDiscoveryService: ToolDiscoveryService,
-    private val promptEngineeringService: PromptEngineeringService,
-    private val codeGenerationPipeline: CodeGenerationPipeline
-) {
-    
-    /**
-     * Core agent generation logic - the actual "meta-agent" intelligence
-     */
-    fun generateAgent(context: MetaAgentContext): GeneratedAgentModel {
-        logger.info("MetaAgent core generation started for: ${context.userInput}")
-        
-        // Step 1: Analyze user intent with LLM
-        val intent = analyzeUserIntent(context)
-        
-        // Step 2: Discover and analyze relevant tools
-        val tools = toolDiscoveryService.discoverTools(intent)
-        
-        // Step 3: Engineer sophisticated prompts
-        val prompts = promptEngineeringService.buildPrompts(context, intent, tools)
-        
-        // Step 4: Generate code using LLM
-        val generatedCode = generateCodeWithLLM(prompts, context)
-        
-        // Step 5: Validate and refine
-        val validatedCode = validator.validateAndRefine(generatedCode)
-        
-        // Step 6: Create complete agent model
-        return GeneratedAgentModel(
-            agentName = extractAgentName(context),
-            packageName = generatePackageName(context),
-            actions = generatedCode.actions,
-            goals = generatedCode.goals,
-            discoveredTools = tools,
-            metadata = AgentMetadata(
-                description = "Generated by MetaAgent",
-                author = "Meta-Agent Framework"
-            ),
-            generationContext = context
-        )
-    }
-    
-    private fun generateCodeWithLLM(prompts: PromptContext, context: MetaAgentContext): CodeResult {
-        val llm = modelProvider.defaultLlm()
-        
-        // Use LLM to generate agent code
-        return llm.createObject(
-            prompts.masterPrompt,
-            CodeResult::class.java
-        )
-    }
-}
 ```
 
 ### Interactive Shell Application
