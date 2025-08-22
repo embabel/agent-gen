@@ -44,7 +44,10 @@ data class GeneratedAgentModel(
     val generationMetadata: GenerationMetadata,
     
     @field:Valid
-    val generationContext: MetaAgentContext
+    val generationContext: MetaAgentContext,
+    
+    @field:NotBlank(message = "Generated code cannot be blank")
+    val generatedCode: String = ""
 ) {
     
     /**
@@ -100,7 +103,9 @@ data class GenerationMetadata(
     val description: String = "",
     val tags: Set<String> = emptySet(),
     val generatedAt: Instant = Instant.now(),
+    val generatedBy: String = "MetaAgent",
     val llmModel: String = "claude-sonnet-4",
+    val codeSize: Int = 0,
     val generationDurationMs: Long = 0
 )
 

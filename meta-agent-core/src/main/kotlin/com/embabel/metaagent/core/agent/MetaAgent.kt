@@ -16,13 +16,17 @@
 package com.embabel.metaagent.core.agent
 
 import com.embabel.agent.api.annotation.*
-import com.embabel.agent.api.common.createObjectIfPossible
+import com.embabel.agent.api.common.OperationContext
+import com.embabel.agent.api.common.create
 import com.embabel.agent.domain.io.UserInput
 import com.embabel.common.ai.model.LlmOptions
 import com.embabel.common.ai.model.ModelSelectionCriteria.Companion.Auto
 import com.embabel.metaagent.core.model.AgentSpecification
 import com.embabel.metaagent.core.model.DiscoveredTool
 import com.embabel.metaagent.core.model.GeneratedAgentModel
+import com.embabel.metaagent.core.model.GenerationMetadata
+import com.embabel.metaagent.core.model.MetaAgentContext
+import com.embabel.metaagent.core.model.TargetLanguage
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import org.slf4j.LoggerFactory
@@ -173,29 +177,54 @@ class MetaAgent {
      * 
      * @since 1.0.0 (Commit 2 - Meta-Agent as @Agent Implementation)
      */
-    @AchievesGoal(description = "Create agent specification from user input through dual-mode processing")
     @Action(
         description = "Process user input and create comprehensive agent specification",
         cost = 0.4,
         value = 0.9,
-        toolGroups = ["llm", "design"]
+        toolGroups = ["llm", "design"],
+        post = ["it:com.embabel.metaagent.core.model.AgentSpecification"]
     )
-    fun createAgentSpecification(userInput: UserInput): AgentSpecification {
+    fun createAgentSpecification(userInput: UserInput, context: OperationContext): AgentSpecification {
         logger.info("🎯 Starting agent specification from user input: ${userInput.content.take(50)}...")
+        logger.debug("📝 Full user input: ${userInput.content}")
         
         try {
             // Dual Mode Processing: Free text OR Structured input
-            return if (isStructuredInput(userInput)) {
-                processStructuredInput(userInput)
+            val result = if (isStructuredInput(userInput)) {
+                logger.info("🏗️ Processing as structured input")
+                processStructuredInput(userInput, context)
             } else {
-                processFreeTextInput(userInput)
+                logger.info("📝 Processing as free text input")
+                processFreeTextInput(userInput, context)
             }
+            
+            // Log the created specification
+            logger.info("✅ Successfully created AgentSpecification:")
+            logger.info("   📋 Name: ${result.name}")
+            logger.info("   🎯 Domain: ${result.domain}")
+            logger.info("   📄 Specification: ${result.specification.take(100)}...")
+            logger.info("   ⚡ Action Intents: ${result.actionIntents}")
+            logger.info("   🎯 Goal Intents: ${result.goalIntents}")
+            logger.info("   📚 Examples: ${result.examples}")
+            
+            return result
             
         } catch (e: Exception) {
             // Log without stack trace to avoid noise in tests
             // The CreateObjectPromptException is expected when LLM service is unavailable
             logger.warn("⚠️ LLM integration failed, using fallback specification: {}", e.message)
-            return createFallbackSpecification(userInput)
+            logger.debug("🔄 Creating fallback specification...")
+            
+            val fallbackResult = createFallbackSpecification(userInput)
+            
+            // Log fallback result
+            logger.info("✅ Created fallback AgentSpecification:")
+            logger.info("   📋 Name: ${fallbackResult.name}")
+            logger.info("   🎯 Domain: ${fallbackResult.domain}")
+            logger.info("   ⚡ Action Intents: ${fallbackResult.actionIntents}")
+            logger.info("   🎯 Goal Intents: ${fallbackResult.goalIntents}")
+            
+            return fallbackResult
         }
     }
     
@@ -205,30 +234,38 @@ class MetaAgent {
      * Analyzes natural language content to extract domain, specification,
      * action intents, and goal intents for agent specification.
      */
-    private fun processFreeTextInput(userInput: UserInput): AgentSpecification {
+    private fun processFreeTextInput(userInput: UserInput, context: OperationContext): AgentSpecification {
         logger.info("📝 Processing free text input")
         
-        val extractedSpec = usingModel(LlmOptions(Auto).toString()).createObjectIfPossible<LLMAgentSpecification>(
-            """
-            Analyze this user input and extract agent specification components:
+        return try {
+            logger.debug("🤖 Calling LLM for specification extraction...")
+            val extractedSpec = context.promptRunner().withLlm(LlmOptions(criteria = Auto)).create<LLMAgentSpecification>(
+                """
+                Analyze this user input and extract agent specification components:
+                
+                User Input: ${userInput.content}
+                
+                Extract and structure the following:
+                1. Domain: What domain/area should this agent work in?
+                2. Specification: What should this agent accomplish? (detailed description)
+                3. Action Intents: What high-level actions should it perform?
+                4. Goal Intents: What high-level goals should it achieve?
+                5. Examples: Any examples or use cases mentioned?
+                
+                Focus on extracting intent and structure from natural language.
+                Convert to structured specification components.
+                """.trimIndent()
+            )
             
-            User Input: ${userInput.content}
+            logger.info("🤖 LLM successfully extracted specification:")
+            logger.debug("   📋 LLM Name: ${extractedSpec.name}")
+            logger.debug("   🎯 LLM Domain: ${extractedSpec.domain}")
+            logger.debug("   ⚡ LLM Action Intents: ${extractedSpec.actionIntents}")
+            logger.debug("   🎯 LLM Goal Intents: ${extractedSpec.goalIntents}")
             
-            Extract and structure the following:
-            1. Domain: What domain/area should this agent work in?
-            2. Specification: What should this agent accomplish? (detailed description)
-            3. Action Intents: What high-level actions should it perform?
-            4. Goal Intents: What high-level goals should it achieve?
-            5. Examples: Any examples or use cases mentioned?
-            
-            Focus on extracting intent and structure from natural language.
-            Convert to structured specification components.
-            """.trimIndent()
-        )
-        
-        return if (extractedSpec != null) {
             convertToAgentSpecification(extractedSpec)
-        } else {
+        } catch (e: Exception) {
+            logger.warn("🔄 Failed to extract specification via LLM, using fallback: ${e.message}")
             createFallbackSpecification(userInput)
         }
     }
@@ -239,14 +276,14 @@ class MetaAgent {
      * For future implementation when users provide structured input
      * through iterative prompting (domain?, specification?, etc.)
      */
-    private fun processStructuredInput(userInput: UserInput): AgentSpecification {
+    private fun processStructuredInput(userInput: UserInput, context: OperationContext): AgentSpecification {
         logger.info("🏗️ Processing structured input")
         
         // TODO: Implement structured input parsing
         // This will handle cases where user provides domain, spec, actions separately
         
         // For now, fallback to free text processing
-        return processFreeTextInput(userInput)
+        return processFreeTextInput(userInput, context)
     }
     
     /**
@@ -486,13 +523,165 @@ class MetaAgent {
         description = "Generate complete agent code with embabel-agent-api annotations and GOAP integration",
         cost = 0.5,
         value = 1.0,
-        toolGroups = ["codegen", "templates"]
+        toolGroups = ["codegen", "templates"],
+        pre = ["it:com.embabel.metaagent.core.model.AgentSpecification"],
+        post = ["it:com.embabel.metaagent.core.model.GeneratedAgentModel"]
     )
-    fun generateAgent(specification: AgentSpecification): GeneratedAgentModel {
+    fun generateAgent(specification: AgentSpecification, context: OperationContext): GeneratedAgentModel {
         logger.info("⚙️ Starting agent generation for: ${specification.name}")
+        logger.debug("📋 Specification: ${specification.specification}")
+        logger.debug("⚡ Action Intents: ${specification.actionIntents}")
+        logger.debug("🎯 Goal Intents: ${specification.goalIntents}")
         
-        // NOT IMPLEMENTED YET - Will be implemented in Commit 5
-        throw NotImplementedError("generateAgent() will be implemented in Commit 5 - Generate Agent Goal")
+        try {
+            // Generate the agent code using LLM
+            logger.info("🤖 Generating Kotlin agent code with LLM...")
+            val generatedCode = context.promptRunner().withLlm(LlmOptions(criteria = Auto)).generateText(
+                """
+                Generate a complete Kotlin agent class using the embabel-agent-api annotations based on this specification:
+                
+                Agent Name: ${specification.name}
+                Domain: ${specification.domain}
+                Description: ${specification.specification}
+                Action Intents: ${specification.actionIntents.joinToString(", ")}
+                Goal Intents: ${specification.goalIntents.joinToString(", ")}
+                
+                Requirements:
+                1. Use @Agent annotation on the class
+                2. Create @Action methods for each action intent
+                3. Use @AchievesGoal annotations linking actions to goals
+                4. Include proper method signatures with domain-appropriate parameters
+                5. Use GOAP-compatible goal states (e.g., "resource_managed", "schedule_created")
+                6. Include @Component annotation for Spring integration
+                7. Follow Kotlin coding conventions
+                8. Include proper imports for embabel-agent-api
+                
+                Generate ONLY the Kotlin class code, no explanations:
+                """.trimIndent()
+            )
+            
+            logger.info("🎯 Generated agent code (${generatedCode.length} characters)")
+            logger.debug("📝 Generated code preview: ${generatedCode.take(200)}...")
+            
+            // Create the GeneratedAgentModel
+            val packageName = generatePackageName(specification)
+            val agent = createAgentFromSpecification(specification)
+            val generationMetadata = GenerationMetadata(
+                generatedAt = java.time.Instant.now(),
+                generatedBy = "MetaAgent",
+                llmModel = "Auto",
+                codeSize = generatedCode.length
+            )
+            
+            val result = GeneratedAgentModel(
+                agent = agent,
+                packageName = packageName,
+                discoveredTools = emptyList(), // TODO: Implement in Milestone 2
+                generationMetadata = generationMetadata,
+                generationContext = MetaAgentContext(
+                    userInput = com.embabel.agent.domain.io.UserInput(specification.specification),
+                    targetLanguage = TargetLanguage.KOTLIN
+                ),
+                generatedCode = generatedCode // Store the actual generated code
+            )
+            
+            logger.info("✅ Successfully generated agent: ${specification.name}")
+            logger.info("   📦 Package: ${packageName}")
+            logger.info("   📝 Code size: ${generatedCode.length} characters")
+            logger.info("   ⚙️ Generated by: MetaAgent with LLM")
+            
+            return result
+            
+        } catch (e: Exception) {
+            logger.warn("🔄 LLM code generation failed, using template fallback: ${e.message}")
+            return createFallbackAgent(specification, context)
+        }
+    }
+    
+    /**
+     * Create fallback agent when LLM generation fails.
+     * 
+     * Generates a basic agent template using the specification details
+     * without requiring LLM integration.
+     */
+    private fun createFallbackAgent(specification: AgentSpecification, context: OperationContext): GeneratedAgentModel {
+        logger.info("🔄 Creating fallback agent code using template approach")
+        
+        // Generate basic agent template
+        val className = specification.name.replace(" ", "")
+        val packageName = generatePackageName(specification)
+        
+        val templateCode = """
+            package $packageName
+            
+            import com.embabel.agent.api.annotation.*
+            import com.embabel.agent.api.common.OperationContext
+            import com.embabel.agent.domain.io.UserInput
+            import org.springframework.stereotype.Component
+            
+            /**
+             * ${specification.name} - Generated by MetaAgent
+             * 
+             * ${specification.specification}
+             */
+            @Agent(
+                name = "${specification.name}",
+                description = "${specification.specification}",
+                planner = Planner.GOAP
+            )
+            @Component
+            class $className {
+            
+                ${generateFallbackActions(specification)}
+            }
+        """.trimIndent()
+        
+        val agent = createAgentFromSpecification(specification)
+        val generationMetadata = GenerationMetadata(
+            generatedAt = java.time.Instant.now(),
+            generatedBy = "MetaAgent-Fallback",
+            llmModel = "Template",
+            codeSize = templateCode.length
+        )
+        
+        logger.info("✅ Created fallback agent: ${specification.name}")
+        logger.info("   📝 Template code size: ${templateCode.length} characters")
+        
+        return GeneratedAgentModel(
+            agent = agent,
+            packageName = packageName,
+            discoveredTools = emptyList(),
+            generationMetadata = generationMetadata,
+            generationContext = MetaAgentContext(
+                userInput = com.embabel.agent.domain.io.UserInput(specification.specification),
+                targetLanguage = TargetLanguage.KOTLIN
+            ),
+            generatedCode = templateCode
+        )
+    }
+    
+    /**
+     * Generate fallback action methods from action intents.
+     */
+    private fun generateFallbackActions(specification: AgentSpecification): String {
+        return specification.actionIntents.mapIndexed { index, actionIntent ->
+            val methodName = actionIntent.replace(" ", "").replaceFirstChar { it.lowercase() }
+            val goalState = actionIntent.replace(" ", "_").lowercase() + "_completed"
+            
+            """
+            @AchievesGoal(description = "$goalState")
+            @Action(
+                description = "$actionIntent",
+                cost = 0.${5 + index},
+                value = 0.${8 - (index * 2).coerceAtMost(6)},
+                toolGroups = ["default"]
+            )
+            fun $methodName(input: UserInput, context: OperationContext): String {
+                // TODO: Implement $actionIntent logic
+                return "Completed: $actionIntent"
+            }
+            """.trimIndent()
+        }.joinToString("\n\n    ")
     }
     
     /**

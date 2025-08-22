@@ -15,7 +15,9 @@
  */
 package com.embabel.metaagent.core.agent
 
+import com.embabel.agent.api.common.OperationContext
 import com.embabel.agent.domain.io.UserInput
+import com.embabel.agent.testing.unit.FakeOperationContext
 import com.embabel.metaagent.core.model.AgentSpecification
 import com.embabel.metaagent.core.model.DiscoveredTool
 import com.embabel.metaagent.core.model.GeneratedAgentModel
@@ -49,11 +51,13 @@ import org.slf4j.LoggerFactory
 class MetaAgentTest {
     
     private lateinit var metaAgent: MetaAgent
+    private lateinit var mockContext: OperationContext
     private val logger = LoggerFactory.getLogger(MetaAgentTest::class.java)
     
     @BeforeEach
     fun setUp() {
         metaAgent = MetaAgent()
+        mockContext = FakeOperationContext()
     }
     
     // ========================================
@@ -70,7 +74,7 @@ class MetaAgentTest {
         )
         
         // When: createAgentSpecification method is called
-        val result = metaAgent.createAgentSpecification(userInput)
+        val result = metaAgent.createAgentSpecification(userInput, mockContext)
         
         // Then: AgentSpecification is created with proper structure
         assertThat(result).isNotNull
@@ -100,7 +104,7 @@ class MetaAgentTest {
             )
             
             // When: createAgentSpecification method is called
-            val result = metaAgent.createAgentSpecification(userInput)
+            val result = metaAgent.createAgentSpecification(userInput, mockContext)
             
             // Then: Agent name follows expected pattern
             assertThat(result.name).contains("Agent")
@@ -117,7 +121,7 @@ class MetaAgentTest {
         )
         
         // When: createAgentSpecification method is called
-        val result = metaAgent.createAgentSpecification(userInput)
+        val result = metaAgent.createAgentSpecification(userInput, mockContext)
         
         // Then: Action intents are extracted semantically from verbs in content
         assertThat(result.actionIntents).isNotEmpty
@@ -136,7 +140,7 @@ class MetaAgentTest {
         )
         
         // When: createAgentSpecification method is called
-        val result = metaAgent.createAgentSpecification(userInput)
+        val result = metaAgent.createAgentSpecification(userInput, mockContext)
         
         // Then: Goal intents are extracted using smart fallback
         // Note: Smart fallback should extract goal-like words or domain nouns
@@ -151,7 +155,7 @@ class MetaAgentTest {
         )
         
         // When: createAgentSpecification method is called
-        val result = metaAgent.createAgentSpecification(userInput)
+        val result = metaAgent.createAgentSpecification(userInput, mockContext)
         
         // Then: Basic structure is created with smart extraction
         assertThat(result.actionIntents).isNotEmpty // Should extract "create" verb
@@ -165,7 +169,7 @@ class MetaAgentTest {
     // ========================================
     
     @Test
-    fun `generateAgent should throw NotImplementedError as planned for Commit 5`() {
+    fun `generateAgent should create GeneratedAgentModel with fallback template`() {
         // Given: Valid AgentSpecification
         val agentSpec = AgentSpecification(
             name = "TestAgent",
@@ -175,12 +179,15 @@ class MetaAgentTest {
             goalIntents = listOf("complete test")
         )
         
-        // When/Then: Method throws NotImplementedError
-        val exception = assertThrows<NotImplementedError> {
-            metaAgent.generateAgent(agentSpec)
-        }
+        // When/Then: Method should now work with the implementation
+        val result = metaAgent.generateAgent(agentSpec, mockContext)
         
-        assertThat(exception.message).contains("will be implemented in Commit 5")
+        // Then: Should return a GeneratedAgentModel
+        assertThat(result).isNotNull
+        assertThat(result.agent.name).isEqualTo("TestAgent")
+        assertThat(result.generatedCode).isNotBlank()
+        assertThat(result.packageName).isEqualTo("com.embabel.generated.test")
+        
     }
     
     @Test
@@ -242,7 +249,7 @@ class MetaAgentTest {
         )
         
         // When: createAgentSpecification method is called
-        val result = metaAgent.createAgentSpecification(userInput)
+        val result = metaAgent.createAgentSpecification(userInput, mockContext)
         
         // Then: Should handle gracefully and create valid agent name
         assertThat(result.name).matches("^[A-Za-z]+Agent$") // Should be valid class name
@@ -258,7 +265,7 @@ class MetaAgentTest {
         )
         
         // When: createAgentSpecification method is called
-        val result = metaAgent.createAgentSpecification(userInput)
+        val result = metaAgent.createAgentSpecification(userInput, mockContext)
         
         // Then: Should handle gracefully without performance issues
         assertThat(result.actionIntents).isNotEmpty // Should extract "create" verb from content
@@ -285,19 +292,19 @@ class MetaAgentTest {
     @Test
     fun `createAgentSpecification method should have proper action annotations`() {
         // Given: createAgentSpecification method
-        val createSpecMethod = MetaAgent::class.java.getDeclaredMethod("createAgentSpecification", UserInput::class.java)
+        val createSpecMethod = MetaAgent::class.java.getDeclaredMethod("createAgentSpecification", UserInput::class.java, OperationContext::class.java)
         
-        // Then: Should have proper annotations
+        // Then: Should have Action annotation but NOT AchievesGoal (intermediate step)
         val achievesGoalAnnotation = createSpecMethod.getAnnotation(com.embabel.agent.api.annotation.AchievesGoal::class.java)
         val actionAnnotation = createSpecMethod.getAnnotation(com.embabel.agent.api.annotation.Action::class.java)
         
-        assertThat(achievesGoalAnnotation).isNotNull
-        assertThat(achievesGoalAnnotation.description).contains("Create agent specification")
+        assertThat(achievesGoalAnnotation).isNull() // Should be null - intermediate action only
         
         assertThat(actionAnnotation).isNotNull
         assertThat(actionAnnotation.cost).isEqualTo(0.4)
         assertThat(actionAnnotation.value).isEqualTo(0.9)
         assertThat(actionAnnotation.toolGroups).contains("llm", "design")
+        assertThat(actionAnnotation.post).contains("it:com.embabel.metaagent.core.model.AgentSpecification")
     }
     
     @Test

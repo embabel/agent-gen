@@ -38,10 +38,10 @@
         <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
         
         <!-- Spring Boot -->
-        <spring-boot.version>3.2.0</spring-boot.version>
+        <spring-boot.version>3.5.3</spring-boot.version>
         
         <!-- Embabel Agent -->
-        <embabel-agent.version>0.1.0-SNAPSHOT</embabel-agent.version>
+        <embabel-agent.version>0.1.1-SNAPSHOT</embabel-agent.version>
         
         <!-- Testing -->
         <junit.version>5.10.1</junit.version>
@@ -73,15 +73,22 @@
                 <version>${embabel-agent.version}</version>
             </dependency>
             
+            <!-- Embabel Agent Starter -->
+            <dependency>
+                <groupId>com.embabel.agent</groupId>
+                <artifactId>embabel-agent-starter</artifactId>
+                <version>${embabel-agent.version}</version>
+            </dependency>
+            
             <!-- Meta-Agent Modules -->
             <dependency>
-                <groupId>com.embabel</groupId>
+                <groupId>com.embabel.metaagent</groupId>
                 <artifactId>meta-agent-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
             
             <dependency>
-                <groupId>com.embabel</groupId>
+                <groupId>com.embabel.metaagent</groupId>
                 <artifactId>meta-agent-service</artifactId>
                 <version>${project.version}</version>
             </dependency>

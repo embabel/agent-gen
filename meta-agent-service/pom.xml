@@ -39,10 +39,10 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
         
-        <!-- Embabel Agent API -->
+        <!-- Embabel Agent Starter (includes shell, API, and all components) -->
         <dependency>
             <groupId>com.embabel.agent</groupId>
-            <artifactId>embabel-agent-api</artifactId>
+            <artifactId>embabel-agent-starter</artifactId>
         </dependency>
         
         <!-- Testing -->
@@ -79,9 +79,17 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
                 <configuration>
-                    <mainClass>com.embabel.metaagent.MetaAgentShellApplication</mainClass>
+                    <mainClass>com.embabel.metaagent.service.MetaAgentApplication</mainClass>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
             
             <plugin>
