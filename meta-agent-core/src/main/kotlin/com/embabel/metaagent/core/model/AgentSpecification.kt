@@ -219,7 +219,7 @@ data class AgentSpecification(
     fun suggestedPackageName(): String {
         val cleanDomain = domain.lowercase()
             .replace(Regex("[^a-z0-9]"), "")
-        return "com.embabel.generated.$cleanDomain"
+        return "com.embabel.agent.$cleanDomain"
     }
     
     /**

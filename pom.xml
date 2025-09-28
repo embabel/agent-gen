@@ -9,52 +9,52 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
+
     <groupId>com.embabel.metaagent</groupId>
     <artifactId>meta-agent</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
-    
+
     <name>Meta-Agent Framework</name>
     <description>
-        Interactive shell framework for generative AI agent creation using LLMs 
+        Interactive shell framework for generative AI agent creation using LLMs
         to dynamically generate Kotlin agent code with Embabel Agent API annotations.
-        
+
         Features:
         - Domain-agnostic agent generation with zero hardcoded knowledge
-        - Intelligent tool autodiscovery using RAG + Knowledge Graph approaches  
+        - Intelligent tool autodiscovery using RAG + Knowledge Graph approaches
         - Multi-language JVM support with concrete type-safe generation
         - Integration with Embabel ecosystem and GOAP planning
         - Production-ready code generation with comprehensive audit trails
     </description>
-    
+
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        
+
         <!-- Kotlin -->
         <kotlin.version>2.1.0</kotlin.version>
         <kotlin.compiler.jvmTarget>21</kotlin.compiler.jvmTarget>
-        
+
         <!-- Spring Boot -->
         <spring-boot.version>3.5.3</spring-boot.version>
-        
+
         <!-- Embabel Agent -->
-        <embabel-agent.version>0.1.1-SNAPSHOT</embabel-agent.version>
-        
+        <embabel-agent.version>0.1.4-SNAPSHOT</embabel-agent.version>
+
         <!-- Testing -->
         <junit.version>5.10.1</junit.version>
         <mockito.version>5.7.0</mockito.version>
         <assertj.version>3.24.2</assertj.version>
     </properties>
-    
+
     <modules>
         <module>meta-agent-core</module>
         <module>meta-agent-service</module>
         <module>meta-agent-examples</module>
     </modules>
-    
+
     <dependencyManagement>
         <dependencies>
             <!-- Spring Boot BOM -->
@@ -65,41 +65,54 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            
+
             <!-- Embabel Agent API -->
             <dependency>
                 <groupId>com.embabel.agent</groupId>
                 <artifactId>embabel-agent-api</artifactId>
                 <version>${embabel-agent.version}</version>
             </dependency>
-            
+
             <!-- Embabel Agent Starter -->
             <dependency>
                 <groupId>com.embabel.agent</groupId>
-                <artifactId>embabel-agent-starter</artifactId>
+                <artifactId>embabel-agent-starter-shell</artifactId>
                 <version>${embabel-agent.version}</version>
             </dependency>
-            
+
+            <dependency>
+                <groupId>com.embabel.agent</groupId>
+                <artifactId>embabel-agent-starter-shell</artifactId>
+                <version>0${embabel-agent.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.embabel.agent</groupId>
+                <artifactId>embabel-agent-starter-openai</artifactId>
+                <version>0.1.4-SNAPSHOT</version>
+            </dependency>
+
+
             <!-- Meta-Agent Modules -->
             <dependency>
                 <groupId>com.embabel.metaagent</groupId>
                 <artifactId>meta-agent-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>com.embabel.metaagent</groupId>
                 <artifactId>meta-agent-service</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <!-- Validation -->
             <dependency>
                 <groupId>jakarta.validation</groupId>
                 <artifactId>jakarta.validation-api</artifactId>
                 <version>3.0.2</version>
             </dependency>
-            
+
             <!-- Testing -->
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
@@ -107,14 +120,14 @@
                 <version>${junit.version}</version>
                 <scope>test</scope>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-core</artifactId>
                 <version>${mockito.version}</version>
                 <scope>test</scope>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.assertj</groupId>
                 <artifactId>assertj-core</artifactId>
@@ -123,7 +136,7 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-    
+
     <build>
         <pluginManagement>
             <plugins>
@@ -133,7 +146,7 @@
                     <artifactId>spring-boot-maven-plugin</artifactId>
                     <version>${spring-boot.version}</version>
                 </plugin>
-                
+
                 <!-- Kotlin Maven Plugin -->
                 <plugin>
                     <groupId>org.jetbrains.kotlin</groupId>
@@ -155,7 +168,7 @@
                         </dependency>
                     </dependencies>
                 </plugin>
-                
+
                 <!-- Maven Compiler Plugin -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -166,7 +179,7 @@
                         <target>21</target>
                     </configuration>
                 </plugin>
-                
+
                 <!-- Maven Surefire Plugin -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

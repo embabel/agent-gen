@@ -194,11 +194,11 @@ class AgentSpecificationTest {
     fun `suggestedPackageName should generate valid package names`() {
         // Given: Different domain formats
         val testCases = mapOf(
-            "weather" to "com.embabel.generated.weather",
-            "restaurant-booking" to "com.embabel.generated.restaurantbooking",
-            "travel_planning" to "com.embabel.generated.travelplanning",
-            "AI-Assistant" to "com.embabel.generated.aiassistant",
-            "complex-domain_with#chars!" to "com.embabel.generated.complexdomainwithchars"
+            "weather" to "com.embabel.agent.weather",
+            "restaurant-booking" to "com.embabel.agent.restaurantbooking",
+            "travel_planning" to "com.embabel.agent.travelplanning",
+            "AI-Assistant" to "com.embabel.agent.aiassistant",
+            "complex-domain_with#chars!" to "com.embabel.agent.complexdomainwithchars"
         )
         
         testCases.forEach { (domain, expectedPackage) ->

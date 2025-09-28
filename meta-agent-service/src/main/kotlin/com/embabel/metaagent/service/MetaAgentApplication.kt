@@ -41,11 +41,10 @@ import com.embabel.agent.config.annotation.LoggingThemes
  * @see EnableAgents
  */
 @SpringBootApplication
-@EnableAgentShell
 @EnableAgents(
     loggingTheme = LoggingThemes.STAR_WARS,
 )
-@ComponentScan(basePackages = ["com.embabel.metaagent"])
+@ComponentScan(basePackages = ["com.embabel.metaagent", "com.embabel.agent.generated"])
 class MetaAgentApplication {
     companion object {
         /**

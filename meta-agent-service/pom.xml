@@ -3,20 +3,20 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    
+
     <parent>
         <groupId>com.embabel.metaagent</groupId>
         <artifactId>meta-agent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.1.0-SNAPSHOT</version>
     </parent>
-    
+
     <artifactId>meta-agent-service</artifactId>
     <packaging>jar</packaging>
-    
+
     <name>Meta-Agent Service</name>
     <description>
         Spring Boot shell application providing interactive interface for meta-agent generation.
-        
+
         Features:
         - Interactive shell commands for agent generation
         - Spring Boot integration with embabel-agent-shell
@@ -24,7 +24,7 @@
         - RESTful API endpoints for programmatic access
         - Configuration management and property handling
     </description>
-    
+
     <dependencies>
         <!-- Meta-Agent Core -->
         <dependency>
@@ -32,49 +32,57 @@
             <artifactId>meta-agent-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-        
+
+        <dependency>
+            <groupId>com.embabel.metaagent</groupId>
+            <artifactId>meta-agent-examples</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+
         <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
-        
-        <!-- Embabel Agent Starter (includes shell, API, and all components) -->
+
+        <!-- Embabel Agent Starter (includes shell, API, and all components)
         <dependency>
             <groupId>com.embabel.agent</groupId>
             <artifactId>embabel-agent-starter</artifactId>
         </dependency>
-        
+        -->
+
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
-    
+
     <build>
         <sourceDirectory>src/main/kotlin</sourceDirectory>
         <testSourceDirectory>src/test/kotlin</testSourceDirectory>
-        
+
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -91,7 +99,7 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.jetbrains.kotlin</groupId>
                 <artifactId>kotlin-maven-plugin</artifactId>
@@ -112,12 +120,12 @@
                     </execution>
                 </executions>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
             </plugin>
-            
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
