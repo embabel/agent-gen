@@ -560,7 +560,7 @@ class MetaAgent {
                 """.trimIndent()
             )
             
-            logger.info("🎯 Generated agent code (${generatedCode.length} characters)")
+            logger.info("🎯 Generon(specificated agent code (${generatedCode.length} characters)")
             logger.debug("📝 Generated code preview: ${generatedCode.take(200)}...")
             
             // Extract package name from LLM-generated code
@@ -710,7 +710,11 @@ class $className {
         toolGroups = ["web", "apis", "rag"]
     )
     fun discoverTools(specification: AgentSpecification): List<DiscoveredTool> {
-        logger.info("🔍 Starting tool discovery for domain: ${specification.domain}")
+        logger.info("🔍 Starting tool discovery for domain: ${specification.domain}\n\r" +
+                   "📋 Specification: ${specification.specification}\n\r" +
+                   "⚡ Action Intents: ${specification.actionIntents}\n\r" +
+                   "🎯 Goal Intents: ${specification.goalIntents}\n\r" +
+                   "📚 Examples: ${specification.examples}")
         
         // STUB IMPLEMENTATION - Will be enhanced in Milestone 2
         return emptyList()
