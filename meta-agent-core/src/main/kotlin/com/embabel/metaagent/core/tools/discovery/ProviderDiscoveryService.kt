@@ -15,6 +15,8 @@
  */
 package com.embabel.metaagent.core.tools.discovery
 
+import com.embabel.agent.search.BraveWebSearchService
+import com.embabel.agent.search.WebSearchRequest
 import com.embabel.agent.api.common.OperationContext
 import com.embabel.common.ai.model.LlmOptions
 import com.embabel.common.ai.model.ModelSelectionCriteria.Companion.Auto
@@ -22,6 +24,7 @@ import com.embabel.metaagent.core.model.AgentSpecification
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 /**
@@ -34,7 +37,9 @@ import org.springframework.stereotype.Component
  * about URLs or endpoints (which leads to hallucination).
  */
 @Component
-class ProviderDiscoveryService {
+class ProviderDiscoveryService(
+    @Autowired(required = false) private val braveWebSearchService: BraveWebSearchService?
+) {
 
     private val logger = LoggerFactory.getLogger(ProviderDiscoveryService::class.java)
 

@@ -15,6 +15,7 @@
  */
 package com.embabel.metaagent.core.tools.verification
 
+import com.embabel.metaagent.core.tools.discovery.UrlCandidate
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URI

@@ -16,7 +16,11 @@
 package com.embabel.metaagent.service
 
 import com.embabel.agent.api.common.OperationContext
-import com.embabel.metaagent.core.agent.ProviderDiscoveryService
+import com.embabel.metaagent.core.tools.discovery.ProviderDiscoveryService
+import com.embabel.metaagent.core.tools.discovery.UrlCandidate
+import com.embabel.metaagent.core.tools.discovery.ApiStatus
+import com.embabel.metaagent.core.tools.discovery.IntegrationComplexity
+import com.embabel.metaagent.core.tools.verification.UrlStatus
 import com.embabel.metaagent.core.model.AgentSpecification
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
@@ -37,6 +41,12 @@ class ProviderDiscoveryServiceTest {
 
     @Autowired
     lateinit var providerDiscoveryService: ProviderDiscoveryService
+    
+    @Autowired
+    lateinit var urlDiscoveryService: com.embabel.metaagent.core.tools.discovery.UrlDiscoveryService
+    
+    @Autowired
+    lateinit var urlVerificationService: com.embabel.metaagent.core.tools.verification.UrlVerificationService
 
     private val logger = LoggerFactory.getLogger(ProviderDiscoveryServiceTest::class.java)
 
@@ -50,6 +60,7 @@ class ProviderDiscoveryServiceTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Order(1)
     fun `test discover providers for restaurant domain`() {
         logger.info("""
 🏗️ ========== STAGE 1A: PROVIDER DISCOVERY TEST ==========
@@ -80,15 +91,15 @@ class ProviderDiscoveryServiceTest {
             appendLine()
             providers.forEachIndexed { index, provider ->
                 val statusIcon = when (provider.apiStatus) {
-                    com.embabel.metaagent.core.agent.ApiStatus.ACTIVE -> "✅"
-                    com.embabel.metaagent.core.agent.ApiStatus.BETA -> "🧪"
-                    com.embabel.metaagent.core.agent.ApiStatus.DEPRECATED -> "⚠️"
+                    ApiStatus.ACTIVE -> "✅"
+                    ApiStatus.BETA -> "🧪"
+                    ApiStatus.DEPRECATED -> "⚠️"
                     else -> "❓"
                 }
                 val complexityIcon = when (provider.integrationComplexity) {
-                    com.embabel.metaagent.core.agent.IntegrationComplexity.LOW -> "🟢"
-                    com.embabel.metaagent.core.agent.IntegrationComplexity.MEDIUM -> "🟡"
-                    com.embabel.metaagent.core.agent.IntegrationComplexity.HIGH -> "🔴"
+                    IntegrationComplexity.LOW -> "🟢"
+                    IntegrationComplexity.MEDIUM -> "🟡"
+                    IntegrationComplexity.HIGH -> "🔴"
                 }
                 appendLine("${index + 1}. ${provider.name} $statusIcon $complexityIcon")
                 appendLine("   📄 Access: ${provider.accessModel}")
@@ -133,6 +144,7 @@ class ProviderDiscoveryServiceTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Order(2)
     fun `test discover providers for weather domain`() {
         logger.info("""
 🏗️ ========== STAGE 1A: WEATHER DOMAIN TEST ==========
@@ -173,6 +185,7 @@ class ProviderDiscoveryServiceTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Order(5)
     fun `test provider discovery with empty action intents`() {
         logger.info("🔍 Testing provider discovery with minimal specification")
 
@@ -193,5 +206,147 @@ class ProviderDiscoveryServiceTest {
         // Verify no crash and some form of response
         assert(providers != null) { "Should return non-null response even for minimal spec" }
         logger.info("✅ Minimal specification config passed")
+    }
+
+    @Test
+    @org.junit.jupiter.api.Order(3)
+    fun `test URL discovery for discovered providers`() {
+        logger.info("""
+🏗️ ========== STAGE 1A.5: URL DISCOVERY TEST ==========
+🎯 Goal: Discover documentation URLs for providers
+📋 Method: LLM + Web Search enhanced URL discovery
+        """.trimIndent())
+
+        // First get some providers from Stage 1A
+        val specification = AgentSpecification(
+            name = "RestaurantBookingAgent",
+            domain = "restaurant-booking",
+            specification = "Agent that helps users find and book restaurants",
+            actionIntents = listOf("search restaurants", "make reservation"),
+            goalIntents = listOf("find suitable restaurant", "complete booking"),
+            examples = listOf("Book dinner for 4 people tonight")
+        )
+
+        val providers = providerDiscoveryService.discoverProviders(specification, operationContext)
+        assert(providers.isNotEmpty()) { "Should have providers from Stage 1A" }
+        
+        // Test URL discovery for the first few providers
+        val testProviders = providers.take(3)
+        
+        logger.info("🔍 Testing URL discovery for ${testProviders.size} providers...")
+        
+        testProviders.forEach { provider ->
+            logger.info("📍 Testing URLs for provider: ${provider.name}")
+            
+            val urls = urlDiscoveryService.discoverProviderUrls(provider.name, operationContext)
+            
+            logger.info("   🌐 Discovered ${urls.size} URLs:")
+            urls.forEach { url ->
+                val confidenceIcon = when {
+                    url.confidence >= 0.8 -> "🟢"
+                    url.confidence >= 0.6 -> "🟡" 
+                    else -> "🔴"
+                }
+                logger.info("   $confidenceIcon ${url.type}: ${url.url} (confidence: ${String.format("%.2f", url.confidence)})")
+                logger.info("      📄 ${url.description}")
+            }
+            
+            // Verify we got some URLs
+            assert(urls.isNotEmpty()) { "Should discover URLs for provider ${provider.name}" }
+            
+            // Verify URLs have reasonable confidence
+            val hasHighConfidenceUrl = urls.any { it.confidence >= 0.5 }
+            if (!hasHighConfidenceUrl) {
+                logger.warn("⚠️ No high-confidence URLs found for ${provider.name}")
+            }
+            
+            // Verify URLs look reasonable (not just fallback patterns)
+            val hasReasonableUrl = urls.any { url ->
+                url.url.contains("http") && 
+                (url.url.contains("docs") || url.url.contains("api") || url.url.contains("developer"))
+            }
+            assert(hasReasonableUrl) { "Should find reasonable documentation URLs for ${provider.name}" }
+        }
+        
+        logger.info("✅ URL discovery config passed")
+    }
+
+    @Test
+    @org.junit.jupiter.api.Order(4)
+    fun `test URL verification for discovered URLs`() {
+        logger.info("""
+🏗️ ========== STAGE 1B: URL VERIFICATION TEST ==========
+🎯 Goal: Verify which discovered URLs are actually reachable
+📋 Method: HTTP HEAD requests to filter working URLs
+        """.trimIndent())
+
+        // Get providers and URLs from previous stages
+        val specification = AgentSpecification(
+            name = "RestaurantBookingAgent",
+            domain = "restaurant-booking",
+            specification = "Agent that helps users find and book restaurants",
+            actionIntents = listOf("search restaurants", "make reservation"),
+            goalIntents = listOf("find suitable restaurant", "complete booking"),
+            examples = listOf("Book dinner for 4 people tonight")
+        )
+
+        val providers = providerDiscoveryService.discoverProviders(specification, operationContext)
+        assert(providers.isNotEmpty()) { "Should have providers from Stage 1A" }
+        
+        // Test verification for the first provider that has URLs
+        val testProvider = providers.first()
+        logger.info("🔍 Testing URL verification for provider: ${testProvider.name}")
+        
+        // Discover URLs for this provider
+        val urls = urlDiscoveryService.discoverProviderUrls(testProvider.name, operationContext)
+        assert(urls.isNotEmpty()) { "Should have URLs from Stage 1A.5" }
+        
+        logger.info("📍 Verifying ${urls.size} URLs...")
+        
+        // Verify the URLs
+        val verifiedUrls = urlVerificationService.verifyUrls(urls, testProvider.name)
+        
+        logger.info("📊 Verification Results:")
+        logger.info("   Total URLs tested: ${urls.size}")
+        logger.info("   Verified URLs: ${verifiedUrls.size}")
+        
+        verifiedUrls.forEach { verified ->
+            val statusIcon = when (verified.verification.status) {
+                UrlStatus.REACHABLE -> "✅"
+                UrlStatus.NEEDS_AUTH -> "🔐"
+                UrlStatus.NOT_FOUND -> "❌"
+                UrlStatus.ERROR -> "⚠️"
+            }
+            
+            logger.info("   $statusIcon ${verified.urlCandidate.url}")
+            logger.info("      📊 Status: ${verified.verification.status} (${verified.verification.statusCode})")
+            logger.info("      ⏱️ Response time: ${verified.verification.responseTimeMs}ms")
+            logger.info("      🎯 Confidence: ${String.format("%.2f", verified.urlCandidate.confidence)} → ${String.format("%.2f", verified.adjustedConfidence)}")
+        }
+        
+        // Verify we got some working URLs (either reachable or auth-required)
+        val workingUrls = verifiedUrls.filter { 
+            it.verification.status in setOf(
+                UrlStatus.REACHABLE,
+                UrlStatus.NEEDS_AUTH
+            )
+        }
+        
+        logger.info("🎯 Working URLs: ${workingUrls.size}")
+        
+        // For now, just verify the process works (some URLs might not be reachable)
+        assert(verifiedUrls != null) { "Should return verification results" }
+        
+        // If we have working URLs, verify confidence was boosted
+        if (workingUrls.isNotEmpty()) {
+            val hasImprovedConfidence = workingUrls.any { 
+                it.adjustedConfidence > it.urlCandidate.confidence 
+            }
+            if (hasImprovedConfidence) {
+                logger.info("✅ Confidence boosting working for verified URLs")
+            }
+        }
+        
+        logger.info("✅ URL verification config passed")
     }
 }

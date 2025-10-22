@@ -16,6 +16,7 @@
 package com.embabel.metaagent.core.tools.analysis
 
 import com.embabel.metaagent.core.model.*
+import com.embabel.metaagent.core.tools.discovery.LLMToolSuggestion
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 

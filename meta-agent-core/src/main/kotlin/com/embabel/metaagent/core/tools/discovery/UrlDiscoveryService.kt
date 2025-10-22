@@ -15,6 +15,8 @@
  */
 package com.embabel.metaagent.core.tools.discovery
 
+import com.embabel.agent.search.BraveWebSearchService
+import com.embabel.agent.search.WebSearchRequest
 import com.embabel.agent.api.common.OperationContext
 import com.embabel.agent.core.CoreToolGroups
 import com.embabel.common.ai.model.LlmOptions
@@ -22,6 +24,7 @@ import com.embabel.common.ai.model.ModelSelectionCriteria.Companion.Auto
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Component
 
 /**
@@ -33,9 +36,17 @@ import org.springframework.stereotype.Component
  * Enhanced with web search capabilities for real-time accuracy.
  */
 @Component
-class UrlDiscoveryService {
+class UrlDiscoveryService(
+    @Autowired(required = false) private val braveWebSearchService: BraveWebSearchService?
+) {
 
     private val logger = LoggerFactory.getLogger(UrlDiscoveryService::class.java)
+    
+    companion object {
+        @Volatile
+        private var lastBraveApiCall: Long = 0
+        private const val BRAVE_API_DELAY_MS = 2000L
+    }
 
     /**
      * Discover candidate URLs for a provider using LLM + Web Search.
@@ -45,49 +56,124 @@ class UrlDiscoveryService {
      * @return List of candidate URL patterns for verification
      */
     fun discoverProviderUrls(providerName: String, context: OperationContext): List<UrlCandidate> {
-        logger.info("🔍 Stage 1A.5: Discovering URLs for provider: $providerName (plain LLM)")
+        logger.info("🔍 Stage 1A.5: Discovering URLs for provider: $providerName using Brave search")
         
+        return if (braveWebSearchService != null) {
+            try {
+                // Provider-level rate limiting for Brave API
+                synchronized(this) {
+                    val timeSinceLastCall = System.currentTimeMillis() - lastBraveApiCall
+                    if (timeSinceLastCall < BRAVE_API_DELAY_MS) {
+                        val sleepTime = BRAVE_API_DELAY_MS - timeSinceLastCall
+                        logger.info("⏳ Provider rate limiting: waiting ${sleepTime}ms before processing $providerName")
+                        Thread.sleep(sleepTime)
+                    }
+                    lastBraveApiCall = System.currentTimeMillis()
+                }
+                
+                logger.info("🔍 Using Brave search for $providerName URL discovery")
+                val braveResults = searchWithBrave(providerName)
+                logger.info("✅ Brave search found ${braveResults.size} URL candidates")
+                braveResults
+            } catch (e: Exception) {
+                logger.error("❌ Brave search failed for $providerName: ${e.message}")
+                emptyList()
+            }
+        } else {
+            logger.warn("⚠️ Brave search not available - BRAVE_API_KEY required for URL discovery")
+            emptyList()
+        }
+    }
+
+    /**
+     * Search for API documentation URLs using Brave search.
+     * 
+     * @param providerName The provider name to search for
+     * @return List of URL candidates found via Brave search
+     */
+    private fun searchWithBrave(providerName: String): List<UrlCandidate> {
         return try {
-            logger.info("🤖 Plain LLM: Finding known documentation URLs for $providerName")
+            logger.info("🔍 Brave: Searching for $providerName API resources")
             
-            val prompt = buildPlainLlmUrlPrompt(providerName)
-            logger.info("📝 LLM Prompt: $prompt")
+            val allUrlCandidates = mutableListOf<UrlCandidate>()
             
-            val urlDiscovery = context.promptRunner()
-                .withLlm(LlmOptions(criteria = Auto))
-                .createObject(
-                    prompt,
-                    LlmUrlDiscovery::class.java
-                )
+            // Single comprehensive search query to avoid rate limiting
+            val searchQuery = "$providerName API documentation developer OpenAPI swagger reference guide"
             
-            logger.info("🔍 Raw LLM Response - candidateUrls size: ${urlDiscovery.candidateUrls.size}")
-            urlDiscovery.candidateUrls.forEachIndexed { index, candidate ->
-                logger.info("  [$index] URL: '${candidate.url}', Type: '${candidate.type}', Confidence: ${candidate.confidence}")
+            try {
+                val searchRequest = WebSearchRequest(query = searchQuery, count = 10) // More results in single query
+                val braveResults = braveWebSearchService!!.search(searchRequest)
+                logger.info("🔍 Brave search returned ${braveResults.results.size} results for '$searchQuery'")
+                
+                // Log raw results for debugging
+                braveResults.results.forEachIndexed { index, result ->
+                    logger.debug("  Raw result [$index]: title='${result.title}', url='${result.url}', desc='${result.description?.take(100)}...'")
+                }
+                
+                // Convert Brave results to URL candidates
+                val urlCandidates = braveResults.results.mapIndexed { index, result ->
+                    val isRelevant = isApiDocumentationUrl(result.url, result.title, result.description)
+                    logger.debug("  Result [$index] relevance check: $isRelevant")
+                    
+                    if (isRelevant) {
+                        val urlType = inferUrlType(result.url, result.title)
+                        logger.debug("  Result [$index] inferred type: $urlType")
+                        
+                        UrlCandidate(
+                            url = result.url,
+                            type = urlType,
+                            confidence = 0.7, // Brave search confidence
+                            description = "Found via Brave search: ${result.title}"
+                        )
+                    } else {
+                        null
+                    }
+                }.filterNotNull()
+                
+                allUrlCandidates.addAll(urlCandidates)
+                logger.info("✅ Brave search processed ${urlCandidates.size}/${braveResults.results.size} relevant URLs")
+                
+            } catch (e: Exception) {
+                logger.error("❌ Brave search failed for query '$searchQuery': ${e.message}", e)
             }
             
-            val llmResults = urlDiscovery.candidateUrls.map { llmUrl ->
-                UrlCandidate(
-                    url = llmUrl.url,
-                    type = parseUrlType(llmUrl.type),
-                    confidence = llmUrl.confidence,
-                    description = llmUrl.description
-                )
-            }
-            
-            logger.info("✅ LLM processed ${llmResults.size} URL candidates")
-            
-            // If LLM returned no results, search engine integration needed
-            if (llmResults.isEmpty()) {
-                logger.warn("⚠️ LLM returned 0 results for $providerName - search engine integration needed")
-                emptyList() // Remove fallback patterns - they're useless
-            } else {
-                llmResults
-            }
+            // Remove duplicates based on URL
+            val uniqueUrls = allUrlCandidates.distinctBy { it.url }
+            logger.info("🎯 Brave search total: ${allUrlCandidates.size} candidates, ${uniqueUrls.size} unique URLs")
+            uniqueUrls
             
         } catch (e: Exception) {
-            logger.error("❌ LLM URL discovery failed for $providerName: ${e.message}")
-            logger.error("📋 Exception details: ${e.javaClass.simpleName} - ${e.localizedMessage}")
-            emptyList() // No more fallback patterns
+            logger.warn("⚠️ Brave search failed for $providerName: ${e.message}")
+            emptyList()
+        }
+    }
+    
+    /**
+     * Check if a URL looks like API documentation based on URL, title, and description.
+     */
+    private fun isApiDocumentationUrl(url: String, title: String?, description: String?): Boolean {
+        val combinedText = "$url ${title ?: ""} ${description ?: ""}".lowercase()
+        
+        val apiKeywords = listOf("api", "docs", "documentation", "developer", "reference", "guide")
+        val relevantKeywords = listOf("rest", "openapi", "swagger", "sdk", "integration")
+        
+        return apiKeywords.any { it in combinedText } || relevantKeywords.any { it in combinedText }
+    }
+    
+    /**
+     * Infer URL type from URL path and title.
+     */
+    private fun inferUrlType(url: String, title: String?): UrlType {
+        val urlLower = url.lowercase()
+        val titleLower = title?.lowercase() ?: ""
+        
+        return when {
+            "swagger" in urlLower || "swagger" in titleLower -> UrlType.SCHEMA
+            "openapi" in urlLower || "openapi" in titleLower -> UrlType.SCHEMA
+            "/docs" in urlLower || "documentation" in titleLower -> UrlType.DOCUMENTATION
+            "/api" in urlLower || "api reference" in titleLower -> UrlType.API_REFERENCE
+            "reference" in titleLower -> UrlType.API_REFERENCE
+            else -> UrlType.DOCUMENTATION
         }
     }
 

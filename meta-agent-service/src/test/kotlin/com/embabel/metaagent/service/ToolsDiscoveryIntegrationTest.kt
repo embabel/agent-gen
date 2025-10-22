@@ -16,7 +16,11 @@
 package com.embabel.metaagent.service
 
 import com.embabel.agent.api.common.OperationContext
-import com.embabel.metaagent.core.agent.ToolsDiscoveryService
+import com.embabel.metaagent.core.tools.discovery.ToolsDiscoveryService
+import com.embabel.metaagent.core.tools.discovery.ApiParameterDiscoveryService
+import com.embabel.metaagent.core.tools.analysis.ApiAuthenticationAnalyzer
+import com.embabel.metaagent.core.tools.discovery.ParameterSource
+import com.embabel.metaagent.core.tools.discovery.ApiParameter
 import com.embabel.metaagent.core.model.AgentSpecification
 import com.embabel.metaagent.core.model.DiscoveredTool
 import org.junit.jupiter.api.BeforeAll
@@ -44,13 +48,9 @@ class ToolsDiscoveryIntegrationTest {
     lateinit var toolsDiscoveryService: ToolsDiscoveryService
     
     @Autowired
-    lateinit var authenticationAnalyzer: com.embabel.metaagent.core.agent.ApiAuthenticationAnalyzer
+    lateinit var authenticationAnalyzer: ApiAuthenticationAnalyzer
     
-    @Autowired
-    lateinit var helpApiDiscoveryService: com.embabel.metaagent.core.agent.HelpApiDiscoveryService
     
-    @Autowired
-    lateinit var helpApiIntrospectionService: com.embabel.metaagent.core.agent.HelpApiIntrospectionService
 
     private val logger = LoggerFactory.getLogger(ToolsDiscoveryIntegrationTest::class.java)
 
@@ -148,52 +148,6 @@ ${discoveredTools.mapIndexed { index, tool ->
     }
 
 
-    @Test
-    fun `test help API discovery for restaurant tools`() {
-        logger.info("🔍 Testing Help API discovery...")
-        
-        // Create sample discovered tool
-        val sampleTool = DiscoveredTool(
-            name = "OpenTable API",
-            apiUrl = "https://api.opentable.com",
-            apiType = com.embabel.metaagent.core.model.ApiType.REST,
-            authenticationRequired = true,
-            authenticationScheme = com.embabel.metaagent.core.model.AuthenticationScheme.API_KEY,
-            integrationComplexity = com.embabel.metaagent.core.model.IntegrationComplexity.MEDIUM,
-            categories = setOf("restaurant-booking", "reservations")
-        )
-        
-        // Test Help API discovery
-        val helpApis = helpApiDiscoveryService.discoverHelpApis(sampleTool)
-        
-        // Verify results
-        assert(helpApis.isNotEmpty()) { "Should discover Help APIs" }
-        
-        logger.info("📋 Discovered ${helpApis.size} Help APIs:")
-        helpApis.forEach { helpApi ->
-            logger.info("  - ${helpApi.type}: ${helpApi.url}")
-        }
-        
-        // Verify expected Help API types are included
-        val helpTypes = helpApis.map { it.type }.toSet()
-        val expectedTypes = setOf(
-            com.embabel.metaagent.core.agent.HelpApiType.HELP,
-            com.embabel.metaagent.core.agent.HelpApiType.DOCUMENTATION,
-            com.embabel.metaagent.core.agent.HelpApiType.SWAGGER,
-            com.embabel.metaagent.core.agent.HelpApiType.OPENAPI
-        )
-        
-        val hasExpectedTypes = expectedTypes.any { it in helpTypes }
-        assert(hasExpectedTypes) { "Should include common Help API types" }
-        
-        // Verify URLs are properly constructed
-        helpApis.forEach { helpApi ->
-            assert(helpApi.url.startsWith("https://api.opentable.com")) { "Help API URLs should be based on tool URL" }
-            assert(helpApi.url.isNotBlank()) { "Help API URL should not be blank" }
-        }
-        
-        logger.info("✅ Help API discovery config passed")
-    }
 
     @Test
     @org.junit.jupiter.api.Order(3) 
@@ -216,7 +170,7 @@ ${discoveredTools.mapIndexed { index, tool ->
         )
         
         // Direct parameter discovery (bypass Help APIs - sleeping mode)
-        val parameterAnalysis = com.embabel.metaagent.core.agent.ApiParameterDiscoveryService().discoverParametersForApi(
+        val parameterAnalysis = ApiParameterDiscoveryService().discoverParametersForApi(
             sampleTool,
             operationContext
         )
@@ -234,8 +188,8 @@ ${discoveredTools.mapIndexed { index, tool ->
                 params.forEach { param ->
                     val requiredIcon = if (param.required) "✅" else "⚪"
                     val sourceIcon = when (param.source) {
-                        com.embabel.metaagent.core.agent.ParameterSource.LLM_ANALYSIS -> "🤖"
-                        com.embabel.metaagent.core.agent.ParameterSource.STRUCTURE_ANALYSIS -> "🔍"
+                        ParameterSource.LLM_ANALYSIS -> "🤖"
+                        ParameterSource.STRUCTURE_ANALYSIS -> "🔍"
                         else -> "📝"
                     }
                     appendLine("   $requiredIcon ${param.name} (${param.type.name.lowercase()}) $sourceIcon")
@@ -255,10 +209,10 @@ ${discoveredTools.mapIndexed { index, tool ->
         
         // Verify parameter sources are valid
         val validSources = setOf(
-            com.embabel.metaagent.core.agent.ParameterSource.LLM_ANALYSIS,
-            com.embabel.metaagent.core.agent.ParameterSource.STRUCTURE_ANALYSIS,
-            com.embabel.metaagent.core.agent.ParameterSource.DOCUMENTATION_INTROSPECTION,
-            com.embabel.metaagent.core.agent.ParameterSource.OPENAPI_INTROSPECTION
+            ParameterSource.LLM_ANALYSIS,
+            ParameterSource.STRUCTURE_ANALYSIS,
+            ParameterSource.DOCUMENTATION_INTROSPECTION,
+            ParameterSource.OPENAPI_INTROSPECTION
         )
         
         parameterAnalysis.values.flatten().forEach { param ->
@@ -377,71 +331,7 @@ ${discoveredTools.mapIndexed { index, tool ->
         }
     }
 
-    @Test
-    @org.junit.jupiter.api.Disabled("Help API discovery in sleeping mode")
-    fun `test real help API discovery on live APIs`() {
-        logger.info("🔍 Testing Help API discovery on real restaurant APIs...")
-        
-        val realApis = listOf(
-            DiscoveredTool(
-                name = "Yelp Fusion API",
-                apiUrl = "https://api.yelp.com/v3",
-                apiType = com.embabel.metaagent.core.model.ApiType.REST,
-                authenticationRequired = true,
-                authenticationScheme = com.embabel.metaagent.core.model.AuthenticationScheme.API_KEY,
-                integrationComplexity = com.embabel.metaagent.core.model.IntegrationComplexity.MEDIUM,
-                categories = setOf("restaurant-search", "business-lookup")
-            ),
-            DiscoveredTool(
-                name = "Zomato API", 
-                apiUrl = "https://developers.zomato.com/api/v2.1",
-                apiType = com.embabel.metaagent.core.model.ApiType.REST,
-                authenticationRequired = true,
-                authenticationScheme = com.embabel.metaagent.core.model.AuthenticationScheme.API_KEY,
-                integrationComplexity = com.embabel.metaagent.core.model.IntegrationComplexity.LOW,
-                categories = setOf("restaurant-search", "menu-data")
-            )
-        )
-        
-        var totalWorkingHelpApis = 0
-        
-        realApis.forEach { api ->
-            logger.info("🔍 Testing Help APIs for ${api.name}")
-            
-            // Step 1: Discover Help APIs
-            val helpApis = helpApiDiscoveryService.discoverHelpApis(api)
-            
-            // Step 2: Test introspection (will config HTTP connectivity to real Help URLs)
-            val introspectionResult = helpApiIntrospectionService.introspectParameters(
-                api, 
-                helpApis, 
-                operationContext
-            )
-            
-            val workingApis = introspectionResult.workingHelpApis.size
-            totalWorkingHelpApis += workingApis
-            
-            logger.info("📋 ${api.name} Results:")
-            logger.info("   Help APIs tested: ${helpApis.size}")
-            logger.info("   Working Help APIs: $workingApis")
-            logger.info("   Confidence: ${String.format("%.3f", introspectionResult.confidence)}")
-            logger.info("   Source: ${introspectionResult.introspectionSource}")
-            
-            // Log any working Help APIs found
-            introspectionResult.workingHelpApis.forEach { workingApi ->
-                logger.info("   ✅ Working: ${workingApi.helpApi.type} at ${workingApi.helpApi.url}")
-            }
-        }
-        
-        logger.info("📊 Real Help API Discovery Summary:")
-        logger.info("   Total APIs tested: ${realApis.size}")
-        logger.info("   Total working Help APIs found: $totalWorkingHelpApis")
-        
-        // Verify config completed successfully (even if no Help APIs work)
-        assert(realApis.isNotEmpty()) { "Should config at least some real APIs" }
-        
-        logger.info("✅ Real Help API discovery config completed")
-    }
+    
 
     @Test
     fun `test 3-stage API validation for restaurant booking`() {
@@ -536,6 +426,7 @@ ${discoveredTools.mapIndexed { index, tool ->
         
         logger.info("✅ Action-specific scoring config passed - max booking score: ${String.format("%.3f", maxBookingScore)}")
     }
+    
 }
 
 // Data classes for connectivity testing
@@ -551,3 +442,5 @@ enum class ApiStatus {
     NOT_FOUND,      // 404 - API endpoint not found
     ERROR           // Other errors (timeouts, 5xx, etc.)
 }
+
+

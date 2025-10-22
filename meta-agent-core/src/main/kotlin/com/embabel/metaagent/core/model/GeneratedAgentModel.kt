@@ -122,6 +122,7 @@ data class GenerationMetadata(
  * @param authenticationScheme Type of authentication scheme used by the tool
  * @param endpoints List of available API endpoints for this tool
  * @param integrationComplexity Estimated complexity of integrating this tool
+ * @param categories Set of functional categories this tool supports (as suggested by LLM)
  * @param analysisTimestamp When the tool discovery and analysis was performed
  */
 data class DiscoveredTool(
@@ -140,6 +141,8 @@ data class DiscoveredTool(
     val endpoints: List<ApiEndpoint> = emptyList(),
     
     val integrationComplexity: IntegrationComplexity = IntegrationComplexity.MEDIUM,
+    
+    val categories: Set<String> = emptySet(),
     
     val analysisTimestamp: Instant = Instant.now()
 )
