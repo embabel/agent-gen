@@ -254,6 +254,22 @@ class ProviderDiscoveryServiceTest {
             // Verify we got some URLs
             assert(urls.isNotEmpty()) { "Should discover URLs for provider ${provider.name}" }
             
+            // Stage 1B: URL Verification
+            logger.info("   🔍 Stage 1B: Verifying ${urls.size} URLs for ${provider.name}...")
+            val verifiedUrls = urlVerificationService.verifyUrls(urls, provider.name)
+            
+            logger.info("   ✅ Verified ${verifiedUrls.size}/${urls.size} URLs:")
+            verifiedUrls.forEach { verifiedUrl ->
+                val statusIcon = when (verifiedUrl.verification.status) {
+                    UrlStatus.REACHABLE -> "✅"
+                    UrlStatus.NEEDS_AUTH -> "🔐"
+                    UrlStatus.NOT_FOUND -> "❌"
+                    UrlStatus.ERROR -> "⚠️"
+                }
+                logger.info("   $statusIcon ${verifiedUrl.urlCandidate.url} → ${verifiedUrl.verification.status}")
+                logger.info("      📊 Confidence: ${String.format("%.2f", verifiedUrl.adjustedConfidence)}, Authority: ${String.format("%.2f", verifiedUrl.authorityScore)}")
+            }
+            
             // Verify URLs have reasonable confidence
             val hasHighConfidenceUrl = urls.any { it.confidence >= 0.5 }
             if (!hasHighConfidenceUrl) {

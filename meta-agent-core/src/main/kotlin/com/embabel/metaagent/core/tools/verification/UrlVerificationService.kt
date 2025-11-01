@@ -50,9 +50,19 @@ class UrlVerificationService {
     fun verifyUrls(urlCandidates: List<UrlCandidate>, providerName: String): List<VerifiedUrl> {
         logger.info("🔍 Stage 1B: Verifying ${urlCandidates.size} URLs for provider: $providerName")
         
+        // Filter out generic URLs that don't contain provider name
+        val relevantUrls = urlCandidates.filter { candidate ->
+            isProviderSpecific(candidate.url, providerName)
+        }
+        
+        val filteredCount = urlCandidates.size - relevantUrls.size
+        if (filteredCount > 0) {
+            logger.info("🗑️ Filtered out $filteredCount generic URLs not specific to $providerName")
+        }
+        
         val verifiedUrls = mutableListOf<VerifiedUrl>()
         
-        urlCandidates.forEach { candidate ->
+        relevantUrls.forEach { candidate ->
             logger.info("🌐 Testing URL: ${candidate.url}")
             
             val verification = verifyUrl(candidate)
@@ -75,13 +85,14 @@ class UrlVerificationService {
                     VerifiedUrl(
                         urlCandidate = candidate,
                         verification = verification,
-                        adjustedConfidence = calculateAdjustedConfidence(candidate, verification)
+                        adjustedConfidence = calculateAdjustedConfidence(candidate, verification),
+                        authorityScore = calculateDomainAuthority(candidate.url, providerName)
                     )
                 )
             }
         }
         
-        logger.info("✅ Verified ${verifiedUrls.size}/${urlCandidates.size} URLs for $providerName")
+        logger.info("✅ Verified ${verifiedUrls.size}/${relevantUrls.size} provider-specific URLs for $providerName")
         return verifiedUrls
     }
 
@@ -163,6 +174,62 @@ class UrlVerificationService {
         // Cap at 1.0
         return minOf(1.0, maxOf(0.0, adjustedConfidence))
     }
+    
+    /**
+     * Check if URL is provider-specific (contains provider name or key components).
+     */
+    private fun isProviderSpecific(url: String, providerName: String): Boolean {
+        val urlLower = url.lowercase()
+        val providerLower = providerName.lowercase()
+        
+        // Simple approach: extract main words from provider name
+        val providerWords = providerLower
+            .replace(Regex("\\(.*?\\)"), "") // Remove parentheses content
+            .split(Regex("[\\s-]+")) // Split on spaces and hyphens
+            .filter { it.isNotBlank() && it.length > 2 } // Only keep meaningful words
+        
+        // URL must contain at least one provider word
+        return providerWords.any { word -> urlLower.contains(word) }
+    }
+    
+    /**
+     * Calculate domain authority score for ranking.
+     */
+    private fun calculateDomainAuthority(url: String, providerName: String): Double {
+        val domain = extractDomain(url)
+        val providerLower = providerName.lowercase()
+        
+        return when {
+            // Official docs domains
+            domain.startsWith("docs.$providerLower") -> 1.0
+            domain.startsWith("developer.$providerLower") -> 0.9
+            domain.startsWith("api.$providerLower") -> 0.9
+            
+            // Provider's main domain
+            domain.contains(".$providerLower.") || domain.endsWith(".$providerLower.com") -> 0.8
+            
+            // Known API tracking/reference sites
+            domain.contains("apitracker.io") -> 0.7
+            
+            // Code repositories with provider name
+            domain.contains("github.com") -> 0.6
+            domain.contains("gist.github.com") -> 0.5
+            
+            // Everything else that passed provider filter
+            else -> 0.4
+        }
+    }
+    
+    /**
+     * Extract domain from URL.
+     */
+    private fun extractDomain(url: String): String {
+        return try {
+            java.net.URI(url).host?.lowercase() ?: ""
+        } catch (e: Exception) {
+            ""
+        }
+    }
 }
 
 /**
@@ -181,7 +248,8 @@ data class UrlVerificationResult(
 data class VerifiedUrl(
     val urlCandidate: UrlCandidate,
     val verification: UrlVerificationResult,
-    val adjustedConfidence: Double
+    val adjustedConfidence: Double,
+    val authorityScore: Double
 )
 
 /**
