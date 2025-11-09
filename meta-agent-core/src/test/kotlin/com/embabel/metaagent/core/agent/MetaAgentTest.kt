@@ -286,7 +286,7 @@ class MetaAgentTest {
         assertThat(agentAnnotation).isNotNull
         assertThat(agentAnnotation.name).isEqualTo("MetaAgent")
         assertThat(agentAnnotation.description).contains("goal-oriented planning")
-        assertThat(agentAnnotation.planner).isEqualTo(com.embabel.agent.api.annotation.Planner.GOAP)
+        assertThat(agentAnnotation.planner).isEqualTo(com.embabel.agent.api.common.PlannerType.GOAP)
     }
     
     @Test

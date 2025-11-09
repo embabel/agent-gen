@@ -117,19 +117,32 @@ class LlmApiExtractor {
             }
             
             val prompt = """
-            Please analyze the following API documentation and extract all API endpoints:
+            Extract REST API endpoints from this documentation with exact precision.
             
-            Document Title: $title
-            URL: $url
+            Document: $title
+            Source: $url
             
-            Look for:
-            - HTTP methods and endpoints
-            - API paths and URLs  
-            - Parameters (query, path, body, headers)
-            - Parameter types, requirements, and descriptions
-            - Response information
+            CRITICAL: Extract ONLY actual API endpoint paths, not documentation URLs.
             
-            Extract everything you can find and return in structured format.
+            Look for REST API endpoints with patterns like:
+            - HTTP method + path (GET /api/resource)
+            - Path with parameters (/api/resource/{id})
+            - Query parameters (?param=value)
+            
+            DO NOT extract:
+            - Documentation page URLs (https://docs.example.com/...)
+            - Code examples showing full domain URLs
+            - Navigation menu links
+            - Internal documentation references
+            
+            For each endpoint found:
+            1. HTTP method (GET, POST, PUT, DELETE, etc.)
+            2. Exact path as written in documentation
+            3. Brief description of functionality
+            4. Parameters (query, path, body) if mentioned
+            
+            Copy paths EXACTLY as they appear in the API documentation.
+            Do not modify, interpret, or "fix" the paths.
             
             Documentation Content:
             $textToAnalyze

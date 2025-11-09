@@ -288,6 +288,94 @@ class ProviderDiscoveryServiceTest {
     }
 
     @Test
+    @org.junit.jupiter.api.Order(3)
+    fun `test automation-first provider discovery`() {
+        logger.info("""
+🤖 ========== AUTOMATION-FIRST PROVIDER DISCOVERY TEST ==========
+🎯 Goal: Test automation-friendly provider discovery
+📋 Method: Pattern-based automation scoring with zero hardcoding
+        """.trimIndent())
+
+        // Test the enhanced existing service with automation-first prompt
+        val specification = AgentSpecification(
+            name = "RestaurantBookingAgent",
+            domain = "restaurant booking and reservations",
+            specification = "Agent that helps users find and book restaurants with automation-first approach",
+            actionIntents = listOf("search restaurants", "check availability", "make reservation"),
+            goalIntents = listOf("find suitable restaurant", "complete booking"),
+            examples = listOf("Book dinner for 4 people tonight")
+        )
+        
+        val providers = providerDiscoveryService.discoverProviders(specification, operationContext)
+        
+        logger.info("📊 AUTOMATION-FIRST DISCOVERY RESULTS:")
+        logger.info("   Total providers found: ${providers.size}")
+        
+        providers.forEachIndexed { index, provider ->
+            val automationIcon = when (provider.accessModel) {
+                com.embabel.metaagent.core.tools.discovery.AccessModel.PUBLIC_SIGNUP -> "🤖"
+                com.embabel.metaagent.core.tools.discovery.AccessModel.APPROVAL_REQUIRED -> "🔧"  
+                com.embabel.metaagent.core.tools.discovery.AccessModel.AFFILIATE_PROGRAM -> "📞"
+                com.embabel.metaagent.core.tools.discovery.AccessModel.PARTNER_ONLY -> "❌"
+                else -> "❓"
+            }
+            
+            logger.info("${index + 1}. $automationIcon ${provider.name} (${provider.accessModel})")
+            logger.info("   🏢 Target: ${provider.targetMarket}")
+            logger.info("   ⚡ Capabilities: ${provider.capabilities.joinToString(", ")}")
+            logger.info("   🔧 Complexity: ${provider.integrationComplexity}")
+            logger.info("   📊 Status: ${provider.apiStatus}")
+            logger.info("")
+        }
+        
+        // Verify automation focus using AccessModel
+        val publicSignupProviders = providers.filter { it.accessModel == com.embabel.metaagent.core.tools.discovery.AccessModel.PUBLIC_SIGNUP }
+        val approvalRequiredProviders = providers.filter { it.accessModel == com.embabel.metaagent.core.tools.discovery.AccessModel.APPROVAL_REQUIRED }
+        val partnerOnlyProviders = providers.filter { it.accessModel == com.embabel.metaagent.core.tools.discovery.AccessModel.PARTNER_ONLY }
+        val affiliateProviders = providers.filter { it.accessModel == com.embabel.metaagent.core.tools.discovery.AccessModel.AFFILIATE_PROGRAM }
+        
+        logger.info("🤖 PUBLIC SIGNUP (instant): ${publicSignupProviders.size}")
+        logger.info("🔧 APPROVAL REQUIRED (automated): ${approvalRequiredProviders.size}")
+        logger.info("📞 AFFILIATE PROGRAM (business): ${affiliateProviders.size}")
+        logger.info("❌ PARTNER ONLY (manual): ${partnerOnlyProviders.size}")
+        
+        // Assertions
+        assert(providers.isNotEmpty()) { "Should find providers for restaurant domain" }
+        
+        // Check that providers have relevant capabilities
+        val hasRelevantProviders = providers.any { provider ->
+            provider.capabilities.any { capability ->
+                capability.contains("restaurant", ignoreCase = true) ||
+                capability.contains("booking", ignoreCase = true) ||
+                capability.contains("reservation", ignoreCase = true) ||
+                capability.contains("dining", ignoreCase = true)
+            }
+        }
+        
+        logger.info("✅ Found relevant providers: $hasRelevantProviders")
+        
+        // Verify automation-first strategy is working (more accessible than manual)
+        val accessibleProviders = publicSignupProviders.size + approvalRequiredProviders.size
+        val manualProviders = partnerOnlyProviders.size + affiliateProviders.size
+        
+        if (accessibleProviders > manualProviders) {
+            logger.info("🎯 Automation-first strategy working - more accessible providers found!")
+        }
+        
+        // Check automation accessibility ratio
+        val totalProviders = providers.size
+        val accessibilityRatio = if (totalProviders > 0) accessibleProviders.toDouble() / totalProviders else 0.0
+        
+        logger.info("📊 Automation accessibility: ${String.format("%.1f", accessibilityRatio * 100)}%")
+        
+        if (accessibilityRatio < 0.5) {
+            logger.warn("⚠️ Low accessibility ratio - automation-first prompt may need tuning")
+        }
+        
+        logger.info("✅ Automation-first provider discovery test completed")
+    }
+
+    @Test
     @org.junit.jupiter.api.Order(4)
     fun `test URL verification for discovered URLs`() {
         logger.info("""

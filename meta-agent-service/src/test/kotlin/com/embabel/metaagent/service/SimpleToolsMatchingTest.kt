@@ -26,7 +26,7 @@ class SimpleToolsMatchingTest {
     fun `basic tools matching - just log results`() {
         logger.info("🧪 Basic Tools Matching Test")
         
-        // Simple OpenTable API mock
+        // Complete OpenTable API mock (all 5 endpoints)
         val openTableAPI = ApiDocumentation(
             title = "OpenTable API",
             url = "https://docs.opentable.com/",
@@ -34,9 +34,18 @@ class SimpleToolsMatchingTest {
                 ApiEndpoint("GET", "/restaurants", 
                     listOf(ApiParameter("location", "string", true)), 
                     "Search restaurants"),
+                ApiEndpoint("GET", "/restaurants/{restaurant_id}", 
+                    listOf(ApiParameter("restaurant_id", "string", true)), 
+                    "Get detailed information about a specific restaurant"),
                 ApiEndpoint("POST", "/reservations", 
                     listOf(ApiParameter("restaurant_id", "string", true)), 
-                    "Make reservation")
+                    "Create a new restaurant reservation"),
+                ApiEndpoint("PUT", "/reservations/{reservation_id}", 
+                    listOf(ApiParameter("reservation_id", "string", true)), 
+                    "Modify an existing reservation"),
+                ApiEndpoint("DELETE", "/reservations/{reservation_id}", 
+                    listOf(ApiParameter("reservation_id", "string", true)), 
+                    "Cancel a restaurant reservation")
             )
         )
         

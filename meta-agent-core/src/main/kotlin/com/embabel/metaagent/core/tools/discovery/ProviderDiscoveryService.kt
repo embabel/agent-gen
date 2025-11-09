@@ -99,16 +99,21 @@ class ProviderDiscoveryService(
         Please identify 5-8 most relevant API providers considering:
         1. Domain Relevance: Providers specifically useful for ${specification.domain}
         2. Action Support: APIs that enable the intended actions: ${specification.actionIntents.joinToString(", ")}
-        3. Integration Quality: Well-documented APIs with good developer experience
-        4. Reliability: Established providers with good uptime and support
-        5. Access Feasibility: How easily developers can get API access
+        3. AUTOMATION-FIRST AWARENESS: Recognize automation-friendly patterns (self-service, instant access, developer portals) vs manual patterns (contact sales, partnership required)
+        4. Integration Quality: Well-documented APIs with good developer experience
+        5. Reliability: Established providers with good uptime and support
+        6. Access Feasibility: How easily developers can get API access
         
         IMPORTANT: Do NOT provide specific URLs, endpoints, or technical details.
         Only provide business-level information about providers.
         
         For each provider, identify:
         - name: Provider/service name (e.g., "OpenTable", "Yelp")
-        - accessModel: How API access is obtained (affiliate_program, public_signup, partner_only, approval_required)
+        - accessModel: How API access is obtained. Classify based on actual onboarding process:
+          * public_signup (self-service signup, instant API key, developer portal)
+          * approval_required (developer application, review process, automated approval)
+          * affiliate_program (business partnership, affiliate signup required)
+          * partner_only (enterprise sales contact, manual partnership required)
         - capabilities: What functionality it provides (list of capabilities)
         - targetMarket: What type of businesses/use cases it serves
         - integrationComplexity: Development difficulty (LOW, MEDIUM, HIGH)

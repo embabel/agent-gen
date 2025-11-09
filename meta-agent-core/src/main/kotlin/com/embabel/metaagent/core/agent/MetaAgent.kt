@@ -17,6 +17,7 @@ package com.embabel.metaagent.core.agent
 
 import com.embabel.agent.api.annotation.*
 import com.embabel.agent.api.common.OperationContext
+import com.embabel.agent.api.common.PlannerType
 import com.embabel.agent.api.common.create
 import com.embabel.agent.domain.io.UserInput
 import com.embabel.common.ai.model.LlmOptions
@@ -160,7 +161,7 @@ data class LLMAgentSpecification(
 @Agent(
     name = "MetaAgent",
     description = "Generates other agents through goal-oriented planning using LLM intelligence and embabel-agent-api integration",
-    planner = Planner.GOAP
+    planner = PlannerType.GOAP
 )
 @Component
 class MetaAgent {
