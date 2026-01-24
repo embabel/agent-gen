@@ -211,6 +211,7 @@ class ProviderDiscoveryServiceTest {
     @Test
     @org.junit.jupiter.api.Order(3)
     fun `test URL discovery for discovered providers`() {
+        logger.info("ENV: " + System.getenv("BRAVE_API_KEY"))
         logger.info("""
 🏗️ ========== STAGE 1A.5: URL DISCOVERY TEST ==========
 🎯 Goal: Discover documentation URLs for providers

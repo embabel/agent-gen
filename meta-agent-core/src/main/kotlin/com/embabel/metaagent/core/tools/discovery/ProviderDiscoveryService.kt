@@ -15,8 +15,8 @@
  */
 package com.embabel.metaagent.core.tools.discovery
 
-import com.embabel.agent.search.BraveWebSearchService
-import com.embabel.agent.search.WebSearchRequest
+import com.embabel.metaagent.search.BraveWebSearchService
+import com.embabel.metaagent.search.WebSearchRequest
 import com.embabel.agent.api.common.OperationContext
 import com.embabel.common.ai.model.LlmOptions
 import com.embabel.common.ai.model.ModelSelectionCriteria.Companion.Auto

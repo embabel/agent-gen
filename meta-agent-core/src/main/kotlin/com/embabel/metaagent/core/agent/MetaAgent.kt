@@ -15,19 +15,16 @@
  */
 package com.embabel.metaagent.core.agent
 
-import com.embabel.agent.api.annotation.*
+import com.embabel.agent.api.annotation.AchievesGoal
+import com.embabel.agent.api.annotation.Action
+import com.embabel.agent.api.annotation.Agent
 import com.embabel.agent.api.common.OperationContext
 import com.embabel.agent.api.common.PlannerType
-import com.embabel.agent.api.common.create
+import com.embabel.agent.api.common.createObject
 import com.embabel.agent.domain.io.UserInput
 import com.embabel.common.ai.model.LlmOptions
 import com.embabel.common.ai.model.ModelSelectionCriteria.Companion.Auto
-import com.embabel.metaagent.core.model.AgentSpecification
-import com.embabel.metaagent.core.model.DiscoveredTool
-import com.embabel.metaagent.core.model.GeneratedAgentModel
-import com.embabel.metaagent.core.model.GenerationMetadata
-import com.embabel.metaagent.core.model.MetaAgentContext
-import com.embabel.metaagent.core.model.TargetLanguage
+import com.embabel.metaagent.core.model.*
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import org.slf4j.LoggerFactory
@@ -240,7 +237,7 @@ class MetaAgent {
         
         return try {
             logger.debug("🤖 Calling LLM for specification extraction...")
-            val extractedSpec = context.promptRunner().withLlm(LlmOptions(criteria = Auto)).create<LLMAgentSpecification>(
+            val extractedSpec = context.promptRunner().withLlm(LlmOptions(criteria = Auto)).createObject<LLMAgentSpecification>(
                 """
                 Analyze this user input and extract agent specification components:
                 

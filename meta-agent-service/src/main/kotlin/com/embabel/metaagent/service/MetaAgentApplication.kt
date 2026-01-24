@@ -18,8 +18,6 @@ package com.embabel.metaagent.service
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 import org.springframework.context.annotation.ComponentScan
-import com.embabel.agent.config.annotation.EnableAgentShell
-import com.embabel.agent.config.annotation.EnableAgents
 import com.embabel.agent.config.annotation.LoggingThemes
 
 /**
@@ -37,13 +35,10 @@ import com.embabel.agent.config.annotation.LoggingThemes
  * shell:> help
  * ```
  *
- * @see EnableAgentShell
- * @see EnableAgents
+
  */
 @SpringBootApplication
-@EnableAgents(
-    loggingTheme = LoggingThemes.STAR_WARS,
-)
+
 @ComponentScan(basePackages = ["com.embabel.metaagent", "com.embabel.agent.generated"])
 class MetaAgentApplication {
     companion object {

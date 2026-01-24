@@ -37,7 +37,7 @@ import org.springframework.test.context.ActiveProfiles
  */
 @SpringBootTest(classes = [MetaAgentApplication::class])
 @ActiveProfiles("test")
-@org.junit.jupiter.api.Disabled("E2E integration config disabled during Stage 1 development")
+//@org.junit.jupiter.api.Disabled("E2E integration config disabled during Stage 1 development")
 class ToolsDiscoveryIntegrationTest {
 
 

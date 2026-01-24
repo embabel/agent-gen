@@ -1,4 +1,4 @@
-package com.embabel.agent.search
+package com.embabel.metaagent.search
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.annotation.JsonSubTypes
@@ -6,12 +6,19 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo
 import org.springframework.ai.tool.annotation.Tool
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpMethod
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestTemplate
 import java.time.Instant
+
+
+
+@Configuration
+class HttpClientConfig { @Bean fun restTemplate(): RestTemplate = RestTemplate() }
 
 data class WebSearchRequest(
     val query: String,

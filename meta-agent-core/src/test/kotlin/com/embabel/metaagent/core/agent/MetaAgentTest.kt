@@ -17,7 +17,7 @@ package com.embabel.metaagent.core.agent
 
 import com.embabel.agent.api.common.OperationContext
 import com.embabel.agent.domain.io.UserInput
-import com.embabel.agent.testing.unit.FakeOperationContext
+import com.embabel.agent.test.unit.FakeOperationContext
 import com.embabel.metaagent.core.model.AgentSpecification
 import com.embabel.metaagent.core.model.DiscoveredTool
 import com.embabel.metaagent.core.model.GeneratedAgentModel
