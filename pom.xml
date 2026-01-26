@@ -46,7 +46,7 @@
         <!-- Testing -->
         <junit.version>5.10.1</junit.version>
         <mockito.version>5.7.0</mockito.version>
-        <assertj.version>3.24.2</assertj.version>
+        <assertj.version>3.27.7</assertj.version>
     </properties>
 
     <modules>
