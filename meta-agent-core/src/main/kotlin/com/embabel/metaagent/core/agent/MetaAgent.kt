@@ -18,6 +18,7 @@ package com.embabel.metaagent.core.agent
 import com.embabel.agent.api.annotation.AchievesGoal
 import com.embabel.agent.api.annotation.Action
 import com.embabel.agent.api.annotation.Agent
+import com.embabel.agent.api.annotation.ToolGroup
 import com.embabel.agent.api.common.OperationContext
 import com.embabel.agent.api.common.PlannerType
 import com.embabel.agent.api.common.createObject
@@ -103,7 +104,8 @@ data class LLMAgentSpecification(
  * ### Tool Integration Architecture:
  * ```kotlin
  * // Example: Multi-tool action with automatic MCP client integration
- * @Action(toolGroups = ["llm", "apis", "rag"])
+ * @Action(description = "Discover tools for agent")
+ * @ToolGroup("llm, apis, rag")
  * fun discoverTools(design: AgentDesign): DiscoveredTools {
  *     // Automatically resolves and invokes MCP tools from specified groups
  *     // Combines semantic search, API introspection, and LLM reasoning
@@ -179,9 +181,9 @@ class MetaAgent {
         description = "Process user input and create comprehensive agent specification",
         cost = 0.4,
         value = 0.9,
-        toolGroups = ["llm", "design"],
         post = ["it:com.embabel.metaagent.core.model.AgentSpecification"]
     )
+    @ToolGroup ("llm, design")
     fun createAgentSpecification(userInput: UserInput, context: OperationContext): AgentSpecification {
         logger.info("🎯 Starting agent specification from user input: ${userInput.content.take(50)}...")
         logger.debug("📝 Full user input: ${userInput.content}")
@@ -521,10 +523,10 @@ class MetaAgent {
         description = "Generate complete agent code with embabel-agent-api annotations and GOAP integration",
         cost = 0.5,
         value = 1.0,
-        toolGroups = ["codegen", "templates"],
         pre = ["it:com.embabel.metaagent.core.model.AgentSpecification"],
         post = ["it:com.embabel.metaagent.core.model.GeneratedAgentModel"]
     )
+    @ToolGroup("codegen, emplates")
     fun generateAgent(specification: AgentSpecification, context: OperationContext): GeneratedAgentModel {
         logger.info("⚙️ Starting agent generation for: ${specification.name}")
         logger.debug("📋 Specification: ${specification.specification}")
@@ -680,8 +682,8 @@ class $className {
                 description = "$actionIntent",
                 cost = 0.${5 + index},
                 value = 0.${8 - (index * 2).coerceAtMost(6)},
-                toolGroups = ["default"]
             )
+            @ToolGroup("default")
             fun $methodName(input: UserInput, context: OperationContext): String {
                 // TODO: Implement $actionIntent logic
                 return "Completed: $actionIntent"
@@ -704,9 +706,9 @@ class $className {
     @Action(
         description = "Discover and analyze external tools for integration using multi-source strategy",
         cost = 0.7,
-        value = 0.8,
-        toolGroups = ["web", "apis", "rag"]
+        value = 0.8
     )
+    @ToolGroup ("web, apis, rag")
     fun discoverTools(specification: AgentSpecification): List<DiscoveredTool> {
         logger.info("🔍 Starting tool discovery for domain: ${specification.domain}\n\r" +
                    "📋 Specification: ${specification.specification}\n\r" +
@@ -732,9 +734,9 @@ class $className {
     @Action(
         description = "Add AOP-based audit framework to generated agents",
         cost = 0.4,
-        value = 0.7,
-        toolGroups = ["aop", "audit"]
+        value = 0.7
     )
+    @ToolGroup("aop. audit")
     fun makeAuditAware(agent: GeneratedAgentModel): GeneratedAgentModel {
         logger.info("🔍 Adding audit capabilities to: ${agent.agent.name}")
         
