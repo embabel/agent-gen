@@ -3,6 +3,8 @@ package com.embabel.metaagent.search
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.google.common.util.concurrent.RateLimiter
+import org.slf4j.LoggerFactory
 import org.springframework.ai.tool.annotation.Tool
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -34,9 +36,15 @@ abstract class BraveSearchService(
     private val apiKey: String,
     private val baseUrl: String,
     private val restTemplate: RestTemplate,
+    requestsPerSecond: Double = 0.3,  // 1 request every ~3.3 seconds for safety margin
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+    private val rateLimiter = RateLimiter.create(requestsPerSecond)
 
     fun search(request: WebSearchRequest): BraveSearchResults {
+        logger.info("Rate limiter waiting for permit...")
+        val waitTime = rateLimiter.acquire()
+        logger.info("Rate limiter acquired permit after {}s for search: {}", waitTime, request.query)
         val headers = HttpHeaders().apply {
             set("X-Subscription-Token", apiKey)
             set("Accept", "application/json")
@@ -61,6 +69,9 @@ abstract class BraveSearchService(
     }
 
     fun searchRaw(request: WebSearchRequest): String {
+        logger.info("Rate limiter waiting for permit...")
+        val waitTime = rateLimiter.acquire()
+        logger.info("Rate limiter acquired permit after {}s for searchRaw: {}", waitTime, request.query)
         val headers = HttpHeaders().apply {
             set("X-Subscription-Token", apiKey)
             set("Accept", "application/json")
