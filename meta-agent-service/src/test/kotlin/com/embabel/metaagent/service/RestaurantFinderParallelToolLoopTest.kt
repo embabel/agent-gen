@@ -179,7 +179,7 @@ class RestaurantFinderParallelToolLoopTest {
         logger.info("""
 📤 PARALLEL Result (${elapsed}ms)
    Menus: ${result.menusAnalyzed}
-   Summary: ${result.summary.take(200)}...
+   Summary: ${result.summary}
         """.trimIndent())
 
         assert(result.menusAnalyzed > 0)

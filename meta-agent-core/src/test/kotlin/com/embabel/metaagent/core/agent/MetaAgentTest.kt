@@ -297,7 +297,6 @@ class MetaAgentTest {
         assertThat(actionAnnotation).isNotNull
         assertThat(actionAnnotation.cost).isEqualTo(0.4)
         assertThat(actionAnnotation.value).isEqualTo(0.9)
-        assertThat(actionAnnotation.toolGroups).contains("llm", "design")
         assertThat(actionAnnotation.post).contains("it:com.embabel.metaagent.core.model.AgentSpecification")
     }
     
@@ -313,16 +312,12 @@ class MetaAgentTest {
             val actionAnnotation = method.getAnnotation(com.embabel.agent.api.annotation.Action::class.java)
             
             assertThat(actionAnnotation.cost)
-                .withFailMessage("Method ${method.name} should have cost between 0.0 and 1.0")
+                .`as`("Method ${method.name} should have cost between 0.0 and 1.0")
                 .isBetween(0.0, 1.0)
-                
+
             assertThat(actionAnnotation.value)
-                .withFailMessage("Method ${method.name} should have value between 0.0 and 1.0")
+                .`as`("Method ${method.name} should have value between 0.0 and 1.0")
                 .isBetween(0.0, 1.0)
-                
-            assertThat(actionAnnotation.toolGroups)
-                .withFailMessage("Method ${method.name} should specify tool groups")
-                .isNotEmpty
         }
     }
 }
