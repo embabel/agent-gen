@@ -550,11 +550,14 @@ class MetaAgent {
                 1. Use package name: com.embabel.agent.{agent_name_based} (e.g., restaurantplanner, not restaurantbooking)
                 2. Use @Agent(description = "...") annotation on the class (description parameter only)
                 3. Create @Action methods for each action intent with optional cost parameter as Double
-                4. Use @AchievesGoal(description = "...") annotations linking actions to goals
+                4. Use @AchievesGoal(description = "...") annotations with NAMED description parameter, e.g.:
+                   @Action(cost = 1.0)
+                   @AchievesGoal(description = "find matching restaurants")
+                   fun searchRestaurants(...): List<Restaurant>
                 5. Include proper method signatures with domain-appropriate parameters
                 6. Use GOAP-compatible goal states (e.g., "resource_managed", "schedule_created")
-                8. Follow Kotlin coding conventions
-                9. Use exact import: com.embabel.agent.api.annotation.* (singular "annotation")
+                7. Follow Kotlin coding conventions
+                8. Use exact import: com.embabel.agent.api.annotation.* (singular "annotation")
                 
                 Return raw Kotlin source code only (no markdown, no code blocks, no explanations):
                 """.trimIndent()
