@@ -534,36 +534,50 @@ class MetaAgent {
         logger.debug("🎯 Goal Intents: ${specification.goalIntents}")
         
         try {
-            // Generate the agent code using LLM
+            val packageNameLower = specification.name.lowercase().replace(" ", "").replace("-", "").replace("_", "")
+
+            // Generate agent code with data classes (self-contained)
             logger.info("🤖 Generating Kotlin agent code with LLM...")
             val generatedCode = context.promptRunner().withLlm(LlmOptions(criteria = Auto)).generateText(
                 """
                 Generate a complete Kotlin agent class using the embabel-agent-api annotations based on this specification:
-                
+
                 Agent Name: ${specification.name}
                 Domain: ${specification.domain}
                 Description: ${specification.specification}
                 Action Intents: ${specification.actionIntents.joinToString(", ")}
                 Goal Intents: ${specification.goalIntents.joinToString(", ")}
-                
+
+                GOAP CHAINING RULES (CRITICAL):
+                - Actions chain via types: action1() returns TypeA, action2(TypeA) returns TypeB, action3(TypeB) returns TypeC
+                - Each action has UNIQUE input parameter type (no two actions share same input type)
+                - NO orchestration methods - only data transformation actions
+                - NO helper methods that call other actions
+
                 Requirements:
-                1. Use package name: com.embabel.agent.{agent_name_based} (e.g., restaurantplanner, not restaurantbooking)
-                2. Use @Agent(description = "...") annotation on the class (description parameter only)
-                3. Create @Action methods for each action intent with optional cost parameter as Double
-                4. Use @AchievesGoal(description = "...") annotations with NAMED description parameter, e.g.:
-                   @Action(cost = 1.0)
-                   @AchievesGoal(description = "find matching restaurants")
-                   fun searchRestaurants(...): List<Restaurant>
-                5. Include proper method signatures with domain-appropriate parameters
-                6. Use GOAP-compatible goal states (e.g., "resource_managed", "schedule_created")
-                7. Follow Kotlin coding conventions
-                8. Use exact import: com.embabel.agent.api.annotation.* (singular "annotation")
-                
+                1. Package: com.embabel.metaagent.$packageNameLower
+                2. Class: @Agent(description = "short description")
+                3. FIRST action ONLY: fun actionName(input: UserInput, context: OperationContext): TypeA
+                4. SECOND action: fun actionName(param: TypeA): TypeB (takes output of first)
+                5. THIRD action: fun actionName(param: TypeB): TypeC (takes output of second)
+                6. ONLY the FINAL action gets @AchievesGoal annotation
+                7. Annotations:
+                   - FINAL action: @AchievesGoal(description = "goal") then @Action(description = "...", cost = 1.0, value = 0.8) then @ToolGroup("default")
+                   - Other actions: @Action(description = "...", cost = 1.0, value = 0.8) then @ToolGroup("default")
+                8. Each action: logger.info("methodName called with: ...")
+                9. Class: private val logger = LoggerFactory.getLogger(javaClass)
+                10. Imports:
+                   import com.embabel.agent.api.annotation.*
+                   import com.embabel.agent.api.common.OperationContext
+                   import com.embabel.agent.domain.io.UserInput
+                   import org.slf4j.LoggerFactory
+                11. Define data classes for each intermediate type at the end of the file
+
                 Return raw Kotlin source code only (no markdown, no code blocks, no explanations):
                 """.trimIndent()
             )
-            
-            logger.info("🎯 Generon(specificated agent code (${generatedCode.length} characters)")
+
+            logger.info("🎯 Generated agent code (${generatedCode.length} characters)")
             logger.debug("📝 Generated code preview: ${generatedCode.take(200)}...")
             
             // Extract package name from LLM-generated code
@@ -585,7 +599,7 @@ class MetaAgent {
                     userInput = com.embabel.agent.domain.io.UserInput(specification.specification),
                     targetLanguage = TargetLanguage.KOTLIN
                 ),
-                generatedCode = generatedCode // Store the actual generated code
+                generatedCode = generatedCode
             )
             
             logger.info("✅ Successfully generated agent: ${specification.name}")
@@ -626,14 +640,17 @@ package $packageName
 import com.embabel.agent.api.annotation.*
 import com.embabel.agent.api.common.OperationContext
 import com.embabel.agent.domain.io.UserInput
+import org.slf4j.LoggerFactory
 
 /**
  * ${specification.name} - Generated by MetaAgent
- * 
+ *
  * ${specification.specification}
  */
 @Agent(description = "${specification.specification}")
 class $className {
+
+    private val logger = LoggerFactory.getLogger(javaClass)
 
     ${generateFallbackActions(specification)}
 }
@@ -673,26 +690,83 @@ class $className {
     
     /**
      * Generate fallback action methods from action intents.
+     * First action uses (UserInput, OperationContext) signature for shell integration.
+     * Only the FINAL action gets @AchievesGoal (GOAP pattern).
      */
     private fun generateFallbackActions(specification: AgentSpecification): String {
+        val lastIndex = specification.actionIntents.size - 1
         return specification.actionIntents.mapIndexed { index, actionIntent ->
             val methodName = actionIntent.replace(" ", "").replaceFirstChar { it.lowercase() }
             val goalState = actionIntent.replace(" ", "_").lowercase() + "_completed"
-            
-            """
-            @AchievesGoal(description = "$goalState")
-            @Action(
-                description = "$actionIntent",
-                cost = 0.${5 + index},
-                value = 0.${8 - (index * 2).coerceAtMost(6)},
-            )
-            @ToolGroup("default")
-            fun $methodName(input: UserInput, context: OperationContext): String {
-                // TODO: Implement $actionIntent logic
-                return "Completed: $actionIntent"
+            val isFinalAction = index == lastIndex
+
+            if (index == 0) {
+                // First action: entry point with UserInput and OperationContext
+                if (isFinalAction) {
+                    // Single action agent - first is also final
+                    """
+    @AchievesGoal(description = "$goalState")
+    @Action(
+        description = "$actionIntent",
+        cost = 0.${5 + index},
+        value = 0.${8 - (index * 2).coerceAtMost(6)},
+    )
+    @ToolGroup("default")
+    fun $methodName(input: UserInput, context: OperationContext): String {
+        logger.info("$methodName called with input: \${'$'}{input.content}")
+        // TODO: Implement $actionIntent logic
+        return "Completed: $actionIntent"
+    }
+                    """.trimIndent()
+                } else {
+                    // First action but not final - no @AchievesGoal
+                    """
+    @Action(
+        description = "$actionIntent",
+        cost = 0.${5 + index},
+        value = 0.${8 - (index * 2).coerceAtMost(6)},
+    )
+    @ToolGroup("default")
+    fun $methodName(input: UserInput, context: OperationContext): String {
+        logger.info("$methodName called with input: \${'$'}{input.content}")
+        // TODO: Implement $actionIntent logic
+        return "Completed: $actionIntent"
+    }
+                    """.trimIndent()
+                }
+            } else if (isFinalAction) {
+                // Final action: has @AchievesGoal
+                """
+    @AchievesGoal(description = "$goalState")
+    @Action(
+        description = "$actionIntent",
+        cost = 0.${5 + index},
+        value = 0.${8 - (index * 2).coerceAtMost(6)},
+    )
+    @ToolGroup("default")
+    fun $methodName(data: String): String {
+        logger.info("$methodName called with data: \${'$'}data")
+        // TODO: Implement $actionIntent logic
+        return "Completed: $actionIntent"
+    }
+                """.trimIndent()
+            } else {
+                // Intermediate actions: no @AchievesGoal
+                """
+    @Action(
+        description = "$actionIntent",
+        cost = 0.${5 + index},
+        value = 0.${8 - (index * 2).coerceAtMost(6)},
+    )
+    @ToolGroup("default")
+    fun $methodName(data: String): String {
+        logger.info("$methodName called with data: \${'$'}data")
+        // TODO: Implement $actionIntent logic
+        return "Completed: $actionIntent"
+    }
+                """.trimIndent()
             }
-            """.trimIndent()
-        }.joinToString("\n\n    ")
+        }.joinToString("\n\n")
     }
     
     /**
@@ -722,7 +796,171 @@ class $className {
         // STUB IMPLEMENTATION - Will be enhanced in Milestone 2
         return emptyList()
     }
-    
+
+    /**
+     * Generate Tools Goal: Create tool skeletons matching agent actions
+     *
+     * Generates `@LlmTool` annotated methods for I/O actions (API calls, web scraping).
+     * Analytical actions (compare, summarize, analyze) are skipped as they're handled by the LLM.
+     *
+     * @param agentModel The generated agent model to create tools for
+     * @return GeneratedToolsModel Tool skeletons with metadata
+     *
+     * @since 1.0.0
+     */
+    @AchievesGoal(description = "Generate tool skeletons matching agent actions")
+    @Action(
+        description = "Generate @LlmTool skeletons for I/O actions in the agent",
+        cost = 0.4,
+        value = 0.8,
+        pre = ["it:com.embabel.metaagent.core.model.GeneratedAgentModel"],
+        post = ["it:com.embabel.metaagent.core.model.GeneratedToolsModel"]
+    )
+    @ToolGroup("codegen")
+    fun generateTools(agentModel: GeneratedAgentModel, context: OperationContext): GeneratedToolsModel {
+        logger.info("🔧 Starting tool generation for agent: ${agentModel.agentName}")
+
+        val toolClassName = "${agentModel.agentName.removeSuffix("Agent")}Tools"
+
+        // Use LLM to analyze actions and generate tool skeletons
+        val generatedCode = context.promptRunner().withLlm(LlmOptions(criteria = Auto)).generateText(
+            """
+            Analyze this Kotlin agent code and generate a tool class with @LlmTool methods.
+
+            AGENT CODE:
+            ${agentModel.generatedCode}
+
+            RULES:
+            1. Only create @LlmTool methods for I/O actions (API calls, web scraping, database queries, HTTP requests)
+            2. SKIP analytical actions (compare, summarize, analyze, recommend, evaluate, assess) - these are handled by LLM
+            3. Use package: ${agentModel.packageName}
+            4. Tool class name: $toolClassName
+            5. Add logging in each method for testing
+            6. Add TODO comments for implementation
+            7. Include @Value for API key injection if needed
+
+            FORMAT - Generate raw Kotlin code only (no markdown, no explanations):
+
+            package ${agentModel.packageName}
+
+            import com.embabel.agent.api.annotation.LlmTool
+            import org.slf4j.LoggerFactory
+            import org.springframework.beans.factory.annotation.Value
+            import org.springframework.stereotype.Service
+
+            @Service
+            class $toolClassName(
+                @Value("\${'$'}{API_KEY:}") private val apiKey: String = "",
+            ) {
+                private val logger = LoggerFactory.getLogger(javaClass)
+
+                // @LlmTool methods for I/O actions only...
+            }
+            """.trimIndent()
+        )
+
+        logger.info("🎯 Generated tool code (${generatedCode.length} characters)")
+
+        // Parse the generated code to extract method info (simplified)
+        val toolMethods = extractToolMethods(generatedCode)
+        val skippedActions = extractSkippedActions(agentModel.generatedCode, toolMethods)
+
+        val result = GeneratedToolsModel(
+            agentName = agentModel.agentName,
+            packageName = agentModel.packageName,
+            toolClassName = toolClassName,
+            toolMethods = toolMethods,
+            generatedCode = generatedCode,
+            skippedActions = skippedActions
+        )
+
+        // Write tools to filesystem
+        val writtenFile = writeToolsToFile(result, agentModel.packageName)
+        if (writtenFile != null) {
+            logger.info("📁 Tools written to file: $writtenFile")
+        }
+
+        logger.info("✅ Generated ${toolMethods.size} tool methods, skipped ${skippedActions.size} analytical actions")
+        return result
+    }
+
+    /**
+     * Extract tool method info from generated code.
+     */
+    private fun extractToolMethods(code: String): List<ToolMethodInfo> {
+        val methods = mutableListOf<ToolMethodInfo>()
+        val methodPattern = Regex("""@LlmTool\s*\(\s*description\s*=\s*"([^"]+)"\s*\)\s*fun\s+(\w+)\s*\(([^)]*)\)\s*:\s*(\S+)""")
+
+        methodPattern.findAll(code).forEach { match ->
+            val description = match.groupValues[1]
+            val name = match.groupValues[2]
+            val paramsString = match.groupValues[3]
+            val returnType = match.groupValues[4]
+
+            val parameters = if (paramsString.isBlank()) emptyList() else {
+                paramsString.split(",").mapNotNull { param ->
+                    val parts = param.trim().split(":").map { it.trim() }
+                    if (parts.size == 2) ToolParameter(parts[0], parts[1]) else null
+                }
+            }
+
+            methods.add(ToolMethodInfo(
+                name = name,
+                description = description,
+                parameters = parameters,
+                returnType = returnType,
+                actionSource = name
+            ))
+        }
+        return methods
+    }
+
+    /**
+     * Identify actions that were skipped (analytical, not I/O).
+     */
+    private fun extractSkippedActions(agentCode: String, toolMethods: List<ToolMethodInfo>): List<SkippedActionInfo> {
+        val skipped = mutableListOf<SkippedActionInfo>()
+        val actionPattern = Regex("""@Action[^)]*\)\s*(?:@\w+[^)]*\)\s*)*fun\s+(\w+)""")
+        val analyticalKeywords = listOf("compare", "summarize", "analyze", "recommend", "evaluate", "assess", "rank", "review")
+
+        val toolMethodNames = toolMethods.map { it.name.lowercase() }.toSet()
+
+        actionPattern.findAll(agentCode).forEach { match ->
+            val actionName = match.groupValues[1]
+            if (actionName.lowercase() !in toolMethodNames) {
+                val reason = if (analyticalKeywords.any { actionName.lowercase().contains(it) }) {
+                    "Analytical action - handled by LLM directly"
+                } else {
+                    "No matching tool generated"
+                }
+                skipped.add(SkippedActionInfo(actionName, reason))
+            }
+        }
+        return skipped
+    }
+
+    /**
+     * Write generated tools to filesystem.
+     */
+    private fun writeToolsToFile(tools: GeneratedToolsModel, packageName: String): String? {
+        return try {
+            val baseDir = "meta-agent-examples/src/main/generated/kotlin"
+            val packageDir = packageName.replace(".", "/")
+            val fullDir = java.io.File("$baseDir/$packageDir")
+            fullDir.mkdirs()
+
+            val fileName = "${tools.toolClassName}.kt"
+            val file = java.io.File(fullDir, fileName)
+            file.writeText(tools.generatedCode)
+
+            logger.info("📝 Written tools to: ${file.absolutePath}")
+            file.absolutePath
+        } catch (e: Exception) {
+            logger.warn("⚠️ Failed to write tools file: ${e.message}")
+            null
+        }
+    }
+
     /**
      * Make Audit Aware Goal: Add comprehensive audit capabilities to generated agents
      * 
@@ -931,7 +1169,7 @@ class $className {
      * @return Java package name following clean organization pattern
      */
     private fun generatePackageName(specification: AgentSpecification): String {
-        return "com.embabel.agent.${specification.domain}"
+        return "com.embabel.metaagent.${specification.domain.lowercase().replace(" ", "").replace("-", "")}"
     }
     
     /**

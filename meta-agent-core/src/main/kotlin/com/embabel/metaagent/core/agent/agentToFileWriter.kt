@@ -26,21 +26,20 @@ private val logger = LoggerFactory.getLogger("AgentToFileWriter")
 
 /**
  * Write generated agent code to filesystem alongside console output.
- * 
+ *
  * PURPOSE: Persist generated agent code to proper Maven directory structure
  * for IntelliJ recognition and compilation.
- * 
+ *
  * **File Structure Created:**
  * ```
  * meta-agent-examples/src/main/generated/kotlin/
  * └── com/
  *     └── embabel/
- *         └── agent/
- *             └── generated/
- *                 └── {domain}/
- *                     └── {AgentName}.kt
+ *         └── metaagent/
+ *             └── {agentname}/
+ *                 └── {AgentName}.kt  (agent class + data classes)
  * ```
- * 
+ *
  * @param generatedAgent The generated agent model containing code and metadata
  * @return Path to the written file for verification and logging, null if failed
  */
@@ -50,39 +49,39 @@ fun writeAgentToFile(generatedAgent: GeneratedAgentModel): Path? {
         val className = generatedAgent.agent.name
             .split(" ", "-", "_")
             .joinToString("") { it.replaceFirstChar { char -> char.uppercase() } }
-        
+
         // Convert package name to directory structure
         val packageDir = generatedAgent.packageName.replace(".", "/")
-        
+
         // Create the full path: meta-agent-examples/src/main/generated/kotlin/{package}/{ClassName}.kt
         val baseDir = findProjectRoot()
         val targetDir = baseDir.resolve("meta-agent-examples/src/main/generated/kotlin/$packageDir")
         val targetFile = targetDir.resolve("$className.kt")
-        
+
         logger.info("📁 Writing agent code to filesystem:")
         logger.info("   📂 Target directory: $targetDir")
         logger.info("   📄 Target file: $targetFile")
-        
+
         // Create directory structure if it doesn't exist
         Files.createDirectories(targetDir)
         logger.debug("✅ Created directory structure: $targetDir")
-        
+
         // Write the generated code to file
         Files.write(
-            targetFile, 
+            targetFile,
             generatedAgent.generatedCode.toByteArray(),
             StandardOpenOption.CREATE,
             StandardOpenOption.TRUNCATE_EXISTING
         )
-        
+
         logger.info("✅ Successfully wrote agent to file:")
         logger.info("   📄 File: $targetFile")
         logger.info("   📏 Size: ${generatedAgent.generatedCode.length} characters")
         logger.info("   📦 Package: ${generatedAgent.packageName}")
         logger.info("   🎯 Agent: ${generatedAgent.agent.name}")
-        
+
         targetFile
-        
+
     } catch (e: Exception) {
         logger.error("❌ Failed to write agent to file: ${e.message}", e)
         logger.warn("🔄 Agent code is still available in console output and GeneratedAgentModel")
@@ -91,30 +90,42 @@ fun writeAgentToFile(generatedAgent: GeneratedAgentModel): Path? {
 }
 
 /**
- * Find the project root directory by looking for the parent pom.xml.
- * 
+ * Find the project root directory by looking for meta-agent-examples sibling.
+ *
  * Starts from current working directory and walks up the directory tree
- * until it finds a directory containing pom.xml with meta-agent artifactId.
+ * until it finds a directory containing meta-agent-examples as a subdirectory.
+ * Skips directories that are themselves modules (meta-agent-service, meta-agent-core).
  */
 private fun findProjectRoot(): Path {
-    var currentDir = Paths.get(System.getProperty("user.dir"))
-    
+    var currentDir: Path? = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
+
+    logger.debug("📁 Starting search from: $currentDir")
+
     // Walk up the directory tree looking for meta-agent root
     while (currentDir != null) {
-        val pomFile = currentDir.resolve("pom.xml")
-        if (Files.exists(pomFile)) {
-            // Check if this is the meta-agent root by looking for meta-agent-examples subdirectory
-            val examplesDir = currentDir.resolve("meta-agent-examples")
-            if (Files.exists(examplesDir)) {
-                logger.debug("📁 Found project root: $currentDir")
+        val dirName = currentDir.fileName?.toString() ?: ""
+
+        // Skip if we're inside a module directory - not the real root
+        if (dirName.startsWith("meta-agent-")) {
+            currentDir = currentDir.parent
+            continue
+        }
+
+        // Check if this directory contains meta-agent-examples as a direct child
+        val examplesDir = currentDir.resolve("meta-agent-examples")
+        if (Files.exists(examplesDir) && Files.isDirectory(examplesDir)) {
+            // Verify it's the real one by checking for src subdirectory
+            val srcDir = examplesDir.resolve("src")
+            if (Files.exists(srcDir)) {
+                logger.info("📁 Found project root: $currentDir")
                 return currentDir
             }
         }
         currentDir = currentDir.parent
     }
-    
+
     // Fallback to current directory if we can't find the root
-    val fallback = Paths.get(System.getProperty("user.dir"))
+    val fallback = Paths.get(System.getProperty("user.dir")).toAbsolutePath()
     logger.warn("⚠️ Could not find project root, using current directory: $fallback")
     return fallback
 }

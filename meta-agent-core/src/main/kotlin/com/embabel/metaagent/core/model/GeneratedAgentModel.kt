@@ -47,7 +47,13 @@ data class GeneratedAgentModel(
     val generationContext: MetaAgentContext,
     
     @field:NotBlank(message = "Generated code cannot be blank")
-    val generatedCode: String = ""
+    val generatedCode: String = "",
+
+    /**
+     * Generated tools code containing data classes and @LlmTool methods.
+     * Agent code references types from this file (same package, no imports needed).
+     */
+    val generatedToolsCode: String = ""
 ) {
     
     /**
@@ -535,33 +541,92 @@ data class GeneratedSourceCode(
 data class WrittenFiles(
     @field:Valid
     val sourceCode: GeneratedSourceCode,
-    
+
     @field:NotEmpty(message = "Written files cannot be empty")
     val writtenFiles: Map<String, String>, // logical name -> actual file path
-    
+
     @field:NotBlank(message = "Base directory cannot be blank")
     val baseDirectory: String,
-    
+
     val errors: List<String> = emptyList(),
-    
+
     val writtenTimestamp: Instant = Instant.now()
 ) {
-    
+
     /**
      * Whether all files were written successfully without errors.
      */
     val isSuccessful: Boolean
         get() = errors.isEmpty()
-    
+
     /**
      * Get the main agent file path.
      */
     val mainAgentFilePath: String?
         get() = writtenFiles[sourceCode.mainAgentFileName]
-    
+
     /**
      * Get all written file paths.
      */
     val allWrittenPaths: Collection<String>
         get() = writtenFiles.values
 }
+
+/**
+ * Generated tools model containing tool skeletons for agent actions.
+ *
+ * Tools are generated for I/O actions (API calls, web scraping, database queries).
+ * Analytical actions (compare, summarize, analyze) are handled by the LLM directly.
+ *
+ * @param agentName Name of the agent these tools support
+ * @param packageName Package name for the generated tools
+ * @param toolClassName Name of the generated tool class
+ * @param toolMethods List of tool methods with their metadata
+ * @param generatedCode The complete generated Kotlin source code
+ * @param generatedAt Timestamp when tools were generated
+ */
+data class GeneratedToolsModel(
+    val agentName: String,
+    val packageName: String,
+    val toolClassName: String,
+    val toolMethods: List<ToolMethodInfo>,
+    val generatedCode: String,
+    val skippedActions: List<SkippedActionInfo> = emptyList(),
+    val generatedAt: Instant = Instant.now()
+)
+
+/**
+ * Information about a generated tool method.
+ *
+ * @param name Method name
+ * @param description Description for @LlmTool annotation
+ * @param parameters List of parameter names and types
+ * @param returnType Return type of the method
+ * @param actionSource The agent action this tool supports
+ */
+data class ToolMethodInfo(
+    val name: String,
+    val description: String,
+    val parameters: List<ToolParameter>,
+    val returnType: String,
+    val actionSource: String
+)
+
+/**
+ * Tool method parameter.
+ */
+data class ToolParameter(
+    val name: String,
+    val type: String
+)
+
+/**
+ * Information about an action that was skipped (analytical, not I/O).
+ *
+ * @param actionName Name of the skipped action
+ * @param reason Why it was skipped (e.g., "Analytical action - handled by LLM")
+ */
+data class SkippedActionInfo(
+    val actionName: String,
+    val reason: String
+)

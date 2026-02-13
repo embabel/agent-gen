@@ -39,7 +39,7 @@ import com.embabel.agent.config.annotation.LoggingThemes
  */
 @SpringBootApplication
 
-@ComponentScan(basePackages = ["com.embabel.metaagent", "com.embabel.agent.generated"])
+@ComponentScan(basePackages = ["com.embabel.metaagent", "com.embabel.agent"])
 class MetaAgentApplication {
     companion object {
         /**
