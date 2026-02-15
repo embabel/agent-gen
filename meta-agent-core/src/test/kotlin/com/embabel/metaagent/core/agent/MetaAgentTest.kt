@@ -180,7 +180,7 @@ class MetaAgentTest {
         assertThat(result).isNotNull
         assertThat(result.agent.name).isEqualTo("TestAgent")
         assertThat(result.generatedCode).isNotBlank()
-        assertThat(result.packageName).isEqualTo("com.embabel.agent.test")
+        assertThat(result.packageName).isEqualTo("com.embabel.metaagent.test")
         
     }
     

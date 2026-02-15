@@ -1098,18 +1098,6 @@ class $className {
     
     
     /**
-     * Legacy helper method - DEPRECATED
-     * 
-     * NOTE: This method is redundant - extractActionIntentsFromContent() already handles this.
-     * Kept for backward compatibility but should be removed.
-     */
-    @Deprecated("Use extractActionIntentsFromContent() instead", ReplaceWith("emptyList()"))
-    private fun extractIntendedActions(userInput: UserInput): List<String> {
-        // TODO: Remove this method - it's redundant
-        return emptyList()
-    }
-    
-    /**
      * Create basic Agent instance from specification.
      * 
      * PURPOSE: Creates embabel-agent-api Agent structure for internal processing.

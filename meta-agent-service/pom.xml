@@ -25,10 +25,6 @@
         - Configuration management and property handling
     </description>
 
-    <properties>
-        <kotlin.version>2.2.0</kotlin.version>
-        <jsoup.version>1.18.1</jsoup.version>
-    </properties>
 
     <dependencies>
         <!-- Meta-Agent Core -->
@@ -88,23 +84,8 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- Jsoup for HTML parsing and fetching -->
-        <dependency>
-            <groupId>org.jsoup</groupId>
-            <artifactId>jsoup</artifactId>
-            <version>${jsoup.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test</artifactId>
-            <version>${kotlin.version}</version>
-            <scope>test</scope>
-        </dependency>
+        <!-- Jsoup transitive from meta-agent-core -->
+        <!-- kotlin-stdlib-jdk8 and kotlin-test transitive from meta-agent-core -->
     </dependencies>
 
     <build>

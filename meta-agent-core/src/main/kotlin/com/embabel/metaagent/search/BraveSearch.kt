@@ -36,10 +36,14 @@ abstract class BraveSearchService(
     private val apiKey: String,
     private val baseUrl: String,
     private val restTemplate: RestTemplate,
-    requestsPerSecond: Double = 0.3,  // 1 request every ~3.3 seconds for safety margin
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
-    private val rateLimiter = RateLimiter.create(requestsPerSecond)
+
+    companion object {
+        // Shared rate limiter across ALL instances (including across Spring contexts)
+        // 0.3 req/sec = 1 request every ~3.3 seconds for safety margin on Brave's 1 req/sec limit
+        private val rateLimiter = RateLimiter.create(0.3)
+    }
 
     fun search(request: WebSearchRequest): BraveSearchResults {
         logger.info("Rate limiter waiting for permit...")

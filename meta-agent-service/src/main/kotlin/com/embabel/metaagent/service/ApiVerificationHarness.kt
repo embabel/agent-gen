@@ -19,11 +19,9 @@ import com.embabel.agent.api.common.OperationContext
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.net.URI
-import java.net.URLEncoder
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
-import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 /**
@@ -162,22 +160,19 @@ class ApiVerificationHarness {
     }
     
     /**
-     * Construct search URL with test query parameters.
+     * Construct search URL for verification.
+     *
+     * Note: We don't add test parameters here because:
+     * 1. Different APIs have different required parameters
+     * 2. Verification checks endpoint existence, not data retrieval
+     * 3. 400 Bad Request still proves endpoint exists and is accessible
      */
     private fun constructSearchTestUrl(baseUrl: String, endpoint: ApiEndpoint): String {
         val cleanBase = baseUrl.trimEnd('/')
-        val cleanPath = endpoint.path.removePrefix("/v3").let { 
-            if (it.startsWith("/")) it else "/$it" 
+        val cleanPath = endpoint.path.removePrefix("/v3").let {
+            if (it.startsWith("/")) it else "/$it"
         }
-        val fullUrl = "$cleanBase$cleanPath"
-        
-        // Add test parameters for search endpoints
-        return if (endpoint.path.contains("search")) {
-            val encodedLocation = URLEncoder.encode("New York", StandardCharsets.UTF_8)
-            "$fullUrl?location=$encodedLocation&limit=1"
-        } else {
-            fullUrl
-        }
+        return "$cleanBase$cleanPath"
     }
     
     /**

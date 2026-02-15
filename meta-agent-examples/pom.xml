@@ -24,9 +24,6 @@
         - Testing examples and validation scenarios
     </description>
 
-    <properties>
-        <kotlin.version>2.2.0</kotlin.version>
-    </properties>
 
     <dependencies>
         <!-- Meta-Agent Core -->
@@ -36,12 +33,7 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Embabel Agent API - transitive dependency -->
-        <dependency>
-            <groupId>com.embabel.agent</groupId>
-            <artifactId>embabel-agent-api</artifactId>
-        </dependency>
-
+        <!-- Embabel Agent API transitive from meta-agent-core -->
 
         <!-- Testing -->
         <dependency>
@@ -62,22 +54,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
-            <groupId>com.embabel.agent</groupId>
-            <artifactId>embabel-agent-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-stdlib-jdk8</artifactId>
-            <version>${kotlin.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-test</artifactId>
-            <version>${kotlin.version}</version>
-            <scope>test</scope>
-        </dependency>
-
+        <!-- kotlin-stdlib-jdk8 and kotlin-test transitive from meta-agent-core -->
     </dependencies>
 
     <build>
