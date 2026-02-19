@@ -11,7 +11,11 @@ import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.embabel.agent.api.tool.callback.ToolLoopLoggingInspector
+import com.embabel.agent.api.tool.callback.ToolResultTruncatingTransformer
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
@@ -129,17 +133,21 @@ class RestaurantFinderParallelToolLoopTest {
         } catch (e: Exception) { null }
     }
 
-    @Test
-    fun `parallel tool loop test`() {
+    /**
+     * Sets up tools for parallel testing.
+     * Returns list of tools, or null if prerequisites not met (API keys missing, no data found).
+     */
+    private fun setupParallelTools(): List<Tool>? {
         if (foursquareApiKey.isBlank() || braveWebSearchService == null) {
             logger.warn("⚠️ API keys not set - skipping")
-            return
+            return null
         }
 
-        logger.info("🚀 ========== PARALLEL TOOL LOOP TEST ==========")
-
         val restaurants = searchFoursquare("italian restaurant", "Upper East Side, New York, NY").results
-        if (restaurants.isEmpty()) return
+        if (restaurants.isEmpty()) {
+            logger.warn("No restaurants found")
+            return null
+        }
 
         // Find menu URLs (sequential - rate limited)
         val menuUrls = restaurants.take(3).mapNotNull { r ->
@@ -148,21 +156,28 @@ class RestaurantFinderParallelToolLoopTest {
 
         if (menuUrls.isEmpty()) {
             logger.warn("No menu URLs found")
-            return
+            return null
         }
 
         logger.info("Found ${menuUrls.size} URLs, creating separate tool per restaurant...")
 
         // Create dynamically-named tools for each restaurant
         val tools = menuUrls.map { (name, url) -> createMenuTool(name, url) }
-        val toolNames = tools.map { it.definition.name }
+        logger.info("Tools created: ${tools.map { it.definition.name }}")
 
-        logger.info("Tools created: $toolNames")
+        return tools
+    }
+
+    @Test
+    fun `parallel tool loop test`() {
+        val tools = setupParallelTools() ?: return
+
+        logger.info("🚀 ========== PARALLEL TOOL LOOP TEST ==========")
         logger.info("Invoking LLM with ${tools.size} separate tools...")
 
+        val toolNames = tools.map { it.definition.name }
         val startTime = System.currentTimeMillis()
 
-        // Build prompt runner with all tools
         val result = ai.withDefaultLlm()
             .withTools(tools)
             .creating(MenuComparisonResult::class.java)
@@ -183,5 +198,52 @@ class RestaurantFinderParallelToolLoopTest {
         """.trimIndent())
 
         assert(result.menusAnalyzed > 0)
+    }
+
+    @Nested
+    inner class CallbackTest {
+
+        @Test
+        fun `parallel tool loop with callbacks`() {
+            val tools = setupParallelTools() ?: return
+
+            logger.info("🔍 ========== PARALLEL CALLBACK TEST ==========")
+
+            val loggingInspector = ToolLoopLoggingInspector(logLevel = ToolLoopLoggingInspector.LogLevel.INFO)
+            val truncatingTransformer = ToolResultTruncatingTransformer(
+                maxLength = 5000,
+                logLevel = ToolLoopLoggingInspector.LogLevel.INFO
+            )
+
+            val toolNames = tools.map { it.definition.name }
+            logger.info("Invoking LLM with ${tools.size} tools, inspector and truncating transformer...")
+
+            val startTime = System.currentTimeMillis()
+
+            val result = ai.withDefaultLlm()
+                .withTools(tools)
+                .withToolLoopInspectors(loggingInspector)
+                .withToolLoopTransformers(truncatingTransformer)
+                .creating(MenuComparisonResult::class.java)
+                .fromPrompt("""
+                    You have access to ${tools.size} tools for fetching restaurant menus:
+                    ${toolNames.joinToString(", ")}
+
+                    Call ALL tools to fetch all menus, then compare them.
+
+                    Provide summary and key findings.
+                """.trimIndent())
+
+            val elapsed = System.currentTimeMillis() - startTime
+            logger.info("""
+📤 PARALLEL CALLBACK Result (${elapsed}ms)
+   Menus: ${result.menusAnalyzed}
+   Summary: ${result.summary}
+   Key findings:
+${result.keyFindings.joinToString("\n") { "   - $it" }}
+            """.trimIndent())
+
+            assertTrue(result.menusAnalyzed > 0) { "Should analyze at least one menu" }
+        }
     }
 }

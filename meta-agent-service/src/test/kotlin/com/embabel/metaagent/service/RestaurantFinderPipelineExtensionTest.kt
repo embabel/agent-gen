@@ -49,7 +49,7 @@ import com.fasterxml.jackson.module.kotlin.readValue
 @SpringBootTest(classes = [MetaAgentApplication::class])
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation::class)
-class RestaurantFinderPipelineExtensionTest {
+open class RestaurantFinderPipelineExtensionTest {
 
     @Autowired
     lateinit var restTemplate: RestTemplate
@@ -157,7 +157,7 @@ class RestaurantFinderPipelineExtensionTest {
 
     // ========== FOURSQUARE SEARCH ==========
 
-    private fun searchFoursquare(query: String, near: String): FoursquareSearchResponse {
+    protected fun searchFoursquare(query: String, near: String): FoursquareSearchResponse {
         val headers = HttpHeaders().apply {
             set("Authorization", "Bearer $foursquareApiKey")
             set("Accept", "application/json")
@@ -384,7 +384,7 @@ class RestaurantFinderPipelineExtensionTest {
      * Build search query for finding menu URL.
      * Uses website URL + geolocation for precision.
      */
-    private fun buildMenuSearchQuery(restaurant: FoursquarePlace): String {
+    protected fun buildMenuSearchQuery(restaurant: FoursquarePlace): String {
         val websitePart = restaurant.website?.let {
             it.removePrefix("http://").removePrefix("https://").removeSuffix("/")
         } ?: restaurant.name
@@ -410,7 +410,7 @@ class RestaurantFinderPipelineExtensionTest {
      * Find menu info for a restaurant via BraveSearch.
      * Returns MenuSearchResult with URL and description snippets, or null if not found.
      */
-    private fun findMenuInfo(restaurant: FoursquarePlace): MenuSearchResult? {
+    protected fun findMenuInfo(restaurant: FoursquarePlace): MenuSearchResult? {
         val query = buildMenuSearchQuery(restaurant)
         logger.info("Menu search query: $query")
 
@@ -450,7 +450,7 @@ class RestaurantFinderPipelineExtensionTest {
      * Extract menu JSON-LD from allmenus.com page using Jsoup.
      * Parses HTML and extracts <script type="application/ld+json"> content.
      */
-    private fun extractMenuJson(url: String): String? {
+    protected fun extractMenuJson(url: String): String? {
         return try {
             logger.info("Fetching HTML from: $url")
             val doc = Jsoup.connect(url)

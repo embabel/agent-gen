@@ -1,5 +1,10 @@
 # QUICK HOW-TO-RUN EXAMPLE
 
+
+Set Environment:
+
+1. export BRAVE_API_KEY  (https://brave.com/search/api/)
+2. export FOURSQUARE_API_KEY (https://foursquare.com/products/places-api/)
 ```
 bash
 
