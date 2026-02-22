@@ -53,6 +53,12 @@
         <junit.version>5.10.1</junit.version>
         <mockito.version>5.7.0</mockito.version>
         <assertj.version>3.27.7</assertj.version>
+
+        <!-- LangChain4j -->
+        <langchain4j.version>1.0.0-beta2</langchain4j.version>
+
+        <!-- OpenAI Java SDK -->
+        <openai-java.version>4.22.0</openai-java.version>
     </properties>
 
     <modules>
