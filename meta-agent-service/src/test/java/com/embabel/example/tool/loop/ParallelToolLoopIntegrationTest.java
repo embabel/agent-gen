@@ -60,8 +60,8 @@ class ParallelToolLoopIntegrationTest extends AbstractToolLoopTest {
         // Truncate large menu results
         var truncatingTransformer = createTruncatingTransformer();
 
-        // Sliding window for history management (value to trigger truncation without breaking loop)
-        var slidingWindowTransformer = createSlidingWindowTransformer(6);
+        // Sliding window for history management (larger value to avoid truncating tool call/result pairs)
+        var slidingWindowTransformer = createSlidingWindowTransformer(12);
 
         var toolNames = tools.stream()
             .map(t -> t.getDefinition().getName())
