@@ -9,6 +9,8 @@ import com.embabel.metaagent.service.MetaAgentApplication;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
@@ -136,9 +138,13 @@ class DefaultToolLoopIntegrationTest extends AbstractToolLoopTest {
         final AtomicInteger afterToolResultCount = new AtomicInteger();
         final List<String> toolsInvoked = new ArrayList<>();
 
+        protected final Logger logger = LoggerFactory.getLogger(getClass());
+
         @Override
         public void beforeLlmCall(@NotNull BeforeLlmCallContext context) {
             beforeLlmCallCount.incrementAndGet();
+            var threadName = Thread.currentThread().getName();
+            logger.info("Before LLM Call Thread {}", threadName);
         }
 
         @Override
