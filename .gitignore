@@ -11,3 +11,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Auto-generated test agents (regenerated during builds)
+meta-agent-examples/src/main/generated/kotlin/com/embabel/metaagent/test/TestAgent.kt

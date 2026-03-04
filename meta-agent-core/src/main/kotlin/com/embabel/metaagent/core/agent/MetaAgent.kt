@@ -808,7 +808,7 @@ class $className {
      *
      * @since 1.0.0
      */
-    @AchievesGoal(description = "Generate tool skeletons matching agent actions")
+    //@AchievesGoal(description = "Generate tool skeletons matching agent actions")
     @Action(
         description = "Generate @LlmTool skeletons for I/O actions in the agent",
         cost = 0.4,
