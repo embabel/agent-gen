@@ -1,5 +1,6 @@
 package com.embabel.example.tool.loop;
 
+import com.embabel.agent.api.tool.ToolCallContext;
 import com.embabel.agent.api.tool.callback.AfterToolResultContext;
 import com.embabel.agent.api.tool.callback.BeforeLlmCallContext;
 import com.embabel.agent.api.tool.callback.ToolLoopInspector;
@@ -77,7 +78,8 @@ class OpenAiToolLoopIntegrationTest extends AbstractToolLoopTest {
             20,    // max iterations
             null,  // no tool decorator
             List.of(callbackTracker, createLoggingInspector()),
-            List.of(truncatingTransformer, slidingWindowTransformer)
+            List.of(truncatingTransformer, slidingWindowTransformer),
+            ToolCallContext.EMPTY
         );
 
         var toolNames = tools.stream()
