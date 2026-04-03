@@ -4,6 +4,7 @@ import com.embabel.agent.api.tool.ToolCallContext;
 import com.embabel.agent.api.tool.callback.AfterToolResultContext;
 import com.embabel.agent.api.tool.callback.BeforeLlmCallContext;
 import com.embabel.agent.api.tool.callback.ToolLoopInspector;
+import com.embabel.agent.spi.loop.ImmediateThrowPolicy;
 import com.embabel.agent.spi.loop.ToolInjectionStrategy;
 import com.embabel.agent.spi.loop.support.DefaultToolLoop;
 import com.embabel.chat.SystemMessage;
@@ -78,7 +79,8 @@ class LangChainToolLoopIntegrationTest extends AbstractToolLoopTest {
             null,  // no tool decorator
             List.of(callbackTracker, createLoggingInspector()),
             List.of(truncatingTransformer, slidingWindowTransformer),
-                ToolCallContext.EMPTY
+                ToolCallContext.EMPTY,
+                ImmediateThrowPolicy.INSTANCE
         );
 
         var toolNames = tools.stream()
