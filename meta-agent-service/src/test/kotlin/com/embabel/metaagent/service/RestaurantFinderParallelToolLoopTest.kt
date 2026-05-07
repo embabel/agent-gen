@@ -5,14 +5,16 @@ package com.embabel.metaagent.service
 
 import com.embabel.agent.api.common.Ai
 import com.embabel.agent.api.tool.Tool
+import com.embabel.agent.api.tool.callback.LogLevel
+import com.embabel.agent.api.tool.callback.ToolLoopLoggingInspector
+import com.embabel.agent.api.tool.callback.ToolResultTruncatingTransformer
 import com.embabel.metaagent.search.BraveWebSearchService
 import com.embabel.metaagent.search.WebSearchRequest
 import com.fasterxml.jackson.annotation.JsonClassDescription
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonPropertyDescription
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.embabel.agent.api.tool.callback.ToolLoopLoggingInspector
-import com.embabel.agent.api.tool.callback.ToolResultTruncatingTransformer
+import org.jsoup.Jsoup
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Nested
@@ -27,7 +29,6 @@ import org.springframework.http.HttpMethod
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.TestPropertySource
 import org.springframework.web.client.RestTemplate
-import org.jsoup.Jsoup
 import java.net.URLEncoder
 
 /**
@@ -209,10 +210,10 @@ class RestaurantFinderParallelToolLoopTest {
 
             logger.info("🔍 ========== PARALLEL CALLBACK TEST ==========")
 
-            val loggingInspector = ToolLoopLoggingInspector(logLevel = ToolLoopLoggingInspector.LogLevel.INFO)
+            val loggingInspector = ToolLoopLoggingInspector(logLevel = LogLevel.INFO)
             val truncatingTransformer = ToolResultTruncatingTransformer(
                 maxLength = 5000,
-                logLevel = ToolLoopLoggingInspector.LogLevel.INFO
+                logLevel = LogLevel.INFO
             )
 
             val toolNames = tools.map { it.definition.name }

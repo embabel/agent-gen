@@ -15,6 +15,7 @@
  */
 package com.embabel.metaagent.service
 
+import com.embabel.agent.api.tool.callback.LogLevel
 import com.embabel.agent.api.tool.callback.ToolLoopLoggingInspector
 import com.embabel.agent.api.tool.callback.ToolResultTruncatingTransformer
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -85,10 +86,10 @@ class ToolLoopCallbacksIntegrationTest : RestaurantFinderPipelineExtensionTest()
                 return
             }
 
-            val loggingInspector = ToolLoopLoggingInspector(logLevel = ToolLoopLoggingInspector.LogLevel.INFO)
+            val loggingInspector = ToolLoopLoggingInspector(logLevel = LogLevel.INFO)
             val truncatingTransformer = ToolResultTruncatingTransformer(
                 maxLength = 5000,
-                logLevel = ToolLoopLoggingInspector.LogLevel.INFO
+                logLevel = LogLevel.INFO
             )
             val menuTools = MenuTools()
             val urlList = menuUrls.joinToString("\n") { "- ${it.first}: ${it.second}" }

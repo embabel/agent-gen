@@ -1,11 +1,7 @@
 package com.embabel.example.tool.loop;
 
 import com.embabel.agent.api.tool.Tool;
-import com.embabel.agent.api.tool.callback.AfterIterationContext;
-import com.embabel.agent.api.tool.callback.BeforeLlmCallContext;
-import com.embabel.agent.api.tool.callback.SlidingWindowTransformer;
-import com.embabel.agent.api.tool.callback.ToolLoopLoggingInspector;
-import com.embabel.agent.api.tool.callback.ToolResultTruncatingTransformer;
+import com.embabel.agent.api.tool.callback.*;
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import org.jsoup.Jsoup;
@@ -150,7 +146,7 @@ public abstract class AbstractToolLoopTest {
      */
     protected ToolLoopLoggingInspector createLoggingInspector() {
         return new ToolLoopLoggingInspector(
-            ToolLoopLoggingInspector.LogLevel.INFO,
+            LogLevel.INFO,
             LoggerFactory.getLogger(ToolLoopLoggingInspector.class)
         );
     }
@@ -171,7 +167,7 @@ public abstract class AbstractToolLoopTest {
         return new ToolResultTruncatingTransformer(
             maxLength,
             null, // uses default marker
-            ToolLoopLoggingInspector.LogLevel.INFO,
+            LogLevel.INFO,
             LoggerFactory.getLogger(ToolResultTruncatingTransformer.class)
         );
     }
