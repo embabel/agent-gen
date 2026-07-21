@@ -41,7 +41,7 @@
         <spring-boot.version>3.5.12</spring-boot.version>
 
         <!-- Embabel Agent -->
-        <embabel-agent.version>1.0.0-RC1-SNAPSHOT</embabel-agent.version>
+        <embabel-agent.version>1.0.0</embabel-agent.version>
 
         <!-- HTML Parsing -->
         <jsoup.version>1.21.2</jsoup.version>

@@ -83,28 +83,34 @@ class MetaAgentShellCommands(
     // Store last agent process to access blackboard for gen-tools
     private var lastAgentProcess: com.embabel.agent.core.AgentProcess? = null
 
-    /**i
+    /**
      * Design a new agent from natural language requirements.
-     * 
-     * This command delegates to the MetaAgent's `createAgentSpecification` action,
-     * which uses GOAP planning to analyze user requirements and create a detailed
-     * agent specification.
-     * 
+     *
+     * Accepts either an inline description or a path to a spec file (resolved relative to CWD).
+     *
      * ## Examples
      * ```
      * shell:> design "Create an agent that processes customer orders and sends notifications"
-     * shell:> design "Build an agent for analyzing financial data and generating reports"
+     * shell:> design --spec-file skills.md
+     * shell:> design --spec-file /abs/path/to/spec.md
      * ```
-     * 
+     *
      * @param intent Natural language description of the desired agent functionality
+     * @param specFile Path to a spec file; resolved relative to CWD when not absolute
      * @return Agent specification summary or delegation result
      */
     @ShellMethod("Design a new agent from requirements")
-    fun design(intent: String): String {
+    fun design(
+        @ShellOption(defaultValue = ShellOption.NULL) intent: String?,
+        @ShellOption(defaultValue = ShellOption.NULL, value = ["--spec-file", "-f"]) specFile: String?,
+    ): String {
+        val resolvedIntent = resolveDesignIntent(intent, specFile)
+            ?: return resolveDesignIntentError(intent, specFile)
+
         return try {
             // Delegate to MetaAgent through Autonomy framework using shared session
             val result = autonomy.chooseAndRunAgent(
-                intent = "Use MetaAgent to $intent",
+                intent = "Use MetaAgent to $resolvedIntent",
                 processOptions = sharedProcessOptions
             )
             
@@ -114,7 +120,7 @@ class MetaAgentShellCommands(
             val blackboard = agentProcess.processContext.blackboard
             
             buildString {
-                appendLine("✅ Meta-agent executed successfully for intent: '$intent'")
+                appendLine("✅ Meta-agent executed successfully for intent: '$resolvedIntent'")
                 appendLine("🎯 Agent: ${agentProcess.agent.name}")
                 appendLine("📊 Status: ${agentProcess.status}")
                 appendLine()
@@ -516,4 +522,30 @@ $methods
                "- Shell Integration: Active\n" +
                "- Autonomy Framework: Connected"
     }
+}
+
+/** Returns resolved intent text, or null if validation/file-read failed. */
+internal fun resolveDesignIntent(intent: String?, specFile: String?): String? = when {
+    intent != null && specFile != null -> null
+    specFile != null -> {
+        val file = resolveSpecFile(specFile)
+        if (file.exists()) file.readText() else null
+    }
+    intent != null -> intent
+    else -> null
+}
+
+/** Returns the appropriate error message for a failed resolveDesignIntent. */
+internal fun resolveDesignIntentError(intent: String?, specFile: String?): String = when {
+    intent != null && specFile != null -> "❌ Provide either intent text or --spec-file, not both."
+    specFile != null -> {
+        val file = resolveSpecFile(specFile)
+        "❌ Spec file not found: ${file.absolutePath}"
+    }
+    else -> "❌ Provide either intent text or --spec-file."
+}
+
+internal fun resolveSpecFile(path: String): java.io.File {
+    val file = java.io.File(path)
+    return if (file.isAbsolute) file else java.io.File(System.getProperty("user.dir"), path)
 }
