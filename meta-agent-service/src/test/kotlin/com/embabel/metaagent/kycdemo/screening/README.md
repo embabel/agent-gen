@@ -170,3 +170,8 @@ Report rendering constants:
 - The LLM does not make the final onboarding decision.
 - Possible matches remain possible matches until a human analyst confirms or clears them.
 - The final `KycCase` preserves candidate evidence instead of overwriting the KYC subject identity.
+
+## Agent Construction
+```
+design -f ~/git/meta-agent/meta-agent-service/src/test/kotlin/com/embabel/metaagent/kycdemo/screening/KYC_AGENT_SKILL.md
+```
