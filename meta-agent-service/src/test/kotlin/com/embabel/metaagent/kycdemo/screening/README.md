@@ -53,6 +53,12 @@ flowchart TD
 
    `AML_OFAC_SDN_XML=/path/to/sdn.xml`
 
+   Download `sdn.xml` from OFAC before running the real-file test:
+
+   - OFAC Sanctions List Service: https://ofac.treasury.gov/sanctions-list-service
+   - Direct SDN XML file: https://www.treasury.gov/ofac/downloads/sdn.xml
+   - Compressed SDN XML file: https://www.treasury.gov/ofac/downloads/sdn_xml.zip
+
    For the current fixture, OFAC returns multiple possible corporate candidates.
    Retrieval does not decide whether the KYC subject and OFAC candidate are the
    same legal entity.
