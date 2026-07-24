@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sdnList>
+    <sdnEntry>
+        <uid>OFAC-1001</uid>
+        <firstName>Ivan</firstName>
+        <lastName>Petrov</lastName>
+        <sdnType>Individual</sdnType>
+        <programList>
+            <program>SDN</program>
+        </programList>
+        <akaList>
+            <aka>
+                <firstName>Ivan Nikolayevich</firstName>
+                <lastName>Petrov</lastName>
+            </aka>
+        </akaList>
+        <dateOfBirthList>
+            <dateOfBirthItem>
+                <dateOfBirth>1970-03-20</dateOfBirth>
+            </dateOfBirthItem>
+        </dateOfBirthList>
+        <nationalityList>
+            <nationality>
+                <country>RU</country>
+            </nationality>
+        </nationalityList>
+        <idList>
+            <id>
+                <idType>Passport</idType>
+                <idNumber>RU1234567</idNumber>
+                <idCountry>RU</idCountry>
+            </id>
+        </idList>
+    </sdnEntry>
+    <sdnEntry>
+        <uid>OFAC-2001</uid>
+        <lastName>Blocked Shipping LLC</lastName>
+        <sdnType>Entity</sdnType>
+        <programList>
+            <program>NON-SDN</program>
+        </programList>
+        <idList>
+            <id>
+                <idType>Registration Number</idType>
+                <idNumber>BS-445566</idNumber>
+                <idCountry>PA</idCountry>
+            </id>
+        </idList>
+    </sdnEntry>
+</sdnList>

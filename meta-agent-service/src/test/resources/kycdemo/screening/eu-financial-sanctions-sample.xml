@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<export>
+    <sanctionEntity logicalId="EU-1001" euReferenceNumber="EU.1001">
+        <subjectType code="person"/>
+        <regulation programme="EU_TEST_PROGRAM"/>
+        <nameAlias wholeName="Anna Viktorovna Petrova" strong="true"/>
+        <nameAlias wholeName="Anna Petrova" strong="false"/>
+        <birthdate birthdate="1978-04-09"/>
+        <citizenship countryIso2Code="EE"/>
+        <identification documentTypeCode="passport" documentNumber="EE1234567" countryIso2Code="EE"/>
+    </sanctionEntity>
+    <sanctionEntity logicalId="EU-2001" euReferenceNumber="EU.2001">
+        <subjectType code="enterprise"/>
+        <regulation programme="EU_ENTITY_PROGRAM"/>
+        <nameAlias wholeName="Example Trading Limited" strong="true"/>
+        <address countryIso2Code="CY"/>
+        <identification documentTypeCode="registrationNumber" documentNumber="HE123456" countryIso2Code="CY"/>
+    </sanctionEntity>
+</export>

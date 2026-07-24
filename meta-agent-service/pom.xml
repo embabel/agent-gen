@@ -106,6 +106,20 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- Embabel RAG modules for KYC document ingestion/search demos -->
+        <dependency>
+            <groupId>com.embabel.agent</groupId>
+            <artifactId>embabel-agent-rag-core</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.embabel.agent</groupId>
+            <artifactId>embabel-agent-rag-tika</artifactId>
+            <version>1.0.0-SNAPSHOT</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Jsoup transitive from meta-agent-core -->
         <!-- kotlin-stdlib-jdk8 and kotlin-test transitive from meta-agent-core -->
     </dependencies>
