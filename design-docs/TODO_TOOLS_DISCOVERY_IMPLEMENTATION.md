@@ -41,14 +41,14 @@ class MetaAgent {
     }
 }
 
-@ShellComponent
+@Component
 class MetaAgentShellCommands(
     private val metaAgent: MetaAgent,
     private val autonomy: Autonomy
 ) : ShellCommands {
     
-    @ShellMethod("Discover tools for current design")
-    fun discoverTools(@ShellOption("--domain") domain: String): String {
+    @Command(description = "Discover tools for current design")
+    fun discoverTools(@Option(longName = "domain") domain: String): String {
         return autonomy.accomplishGoal(
             goalName = "discoverTools", 
             agent = metaAgent,
@@ -543,13 +543,13 @@ class CredentialManager {
 }
 
 // NEW: Shell command integration
-@ShellComponent  
+@Component
 class MetaAgentShellCommands {
     
-    @ShellMethod("Manage credentials for discovered tools")
+    @Command(description = "Manage credentials for discovered tools")
     fun credentials(
-        @ShellOption("--tool") toolName: String,
-        @ShellOption("--action", defaultValue = "set") action: String
+        @Option(longName = "tool") toolName: String,
+        @Option(longName = "action", defaultValue = "set") action: String
     ): String {
         return when (action) {
             "set" -> setCredentialsForTool(toolName)
