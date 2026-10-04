@@ -55,7 +55,7 @@
         <assertj.version>3.27.7</assertj.version>
 
         <!-- Jackson -->
-        <jackson.version>3.1.4</jackson.version>
+        <jackson.version>3.1.7</jackson.version>
 
         <!-- Victools JSON Schema Generator (must match Jackson 3 / embabel-agent 1.5.0) -->
         <victools.version>5.0.0</victools.version>
