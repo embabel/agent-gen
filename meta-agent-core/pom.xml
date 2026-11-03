@@ -26,7 +26,7 @@
     </description>
 
     <properties>
-        <guava.version>33.2.1-jre</guava.version>
+        <guava.version>33.7.1-jre</guava.version>
     </properties>
 
     <dependencies>
