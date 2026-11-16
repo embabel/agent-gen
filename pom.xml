@@ -41,7 +41,7 @@
         <spring-boot.version>4.1.0</spring-boot.version>
 
         <!-- Embabel Agent -->
-        <embabel-agent.version>1.5.2</embabel-agent.version>
+        <embabel-agent.version>1.5.4</embabel-agent.version>
 
         <!-- HTML Parsing -->
         <jsoup.version>1.21.2</jsoup.version>
@@ -57,7 +57,7 @@
         <!-- Jackson -->
         <jackson.version>3.1.4</jackson.version>
 
-        <!-- Victools JSON Schema Generator (must match Jackson 3 / embabel-agent 1.5.0) -->
+        <!-- Victools JSON Schema Generator (must match Jackson 3) -->
         <victools.version>5.0.0</victools.version>
 
         <!-- LangChain4j -->
@@ -75,7 +75,7 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- Spring Boot BOM -->
+            <!-- Application-owned Spring Boot management takes precedence over the Agent BOM. -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
@@ -84,24 +84,13 @@
                 <scope>import</scope>
             </dependency>
 
-            <!-- Embabel Agent API -->
+            <!-- Embabel Agent BOM -->
             <dependency>
                 <groupId>com.embabel.agent</groupId>
-                <artifactId>embabel-agent-api</artifactId>
+                <artifactId>embabel-agent-dependencies</artifactId>
                 <version>${embabel-agent.version}</version>
-            </dependency>
-
-            <!-- Embabel Agent Starter -->
-            <dependency>
-                <groupId>com.embabel.agent</groupId>
-                <artifactId>embabel-agent-starter-shell</artifactId>
-                <version>${embabel-agent.version}</version>
-            </dependency>
-
-            <dependency>
-                <groupId>com.embabel.agent</groupId>
-                <artifactId>embabel-agent-starter-openai</artifactId>
-                <version>${embabel-agent.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
 
 

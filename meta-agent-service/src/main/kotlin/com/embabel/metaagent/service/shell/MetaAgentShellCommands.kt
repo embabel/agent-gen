@@ -17,20 +17,19 @@ package com.embabel.metaagent.service.shell
 
 import com.embabel.agent.api.common.autonomy.Autonomy
 import com.embabel.metaagent.core.agent.MetaAgent
-import org.springframework.shell.CompletionContext
-import org.springframework.shell.CompletionProposal
-import org.springframework.shell.standard.ShellComponent
-import org.springframework.shell.standard.ShellMethod
-import org.springframework.shell.standard.ShellOption
-import org.springframework.shell.standard.ValueProvider
+import org.springframework.shell.core.command.annotation.Command
+import org.springframework.shell.core.command.annotation.Option
+import org.springframework.shell.core.command.completion.CompletionContext
+import org.springframework.shell.core.command.completion.CompletionProposal
+import org.springframework.shell.core.command.completion.CompletionProvider
 import org.springframework.stereotype.Component
 
 /**
  * Provides autocompletion for generated agent Kotlin files.
  */
 @Component
-class GeneratedAgentFileValueProvider : ValueProvider {
-    override fun complete(completionContext: CompletionContext): List<CompletionProposal> {
+class GeneratedAgentFileValueProvider : CompletionProvider {
+    override fun apply(completionContext: CompletionContext): List<CompletionProposal> {
         val currentInput = completionContext.currentWordUpToCursor() ?: ""
         // Try both relative paths (from meta-agent root or meta-agent-service)
         val baseDirs = listOf(
@@ -71,7 +70,7 @@ class GeneratedAgentFileValueProvider : ValueProvider {
  * @param metaAgent The core meta-agent instance with @Agent annotation
  * @param autonomy The autonomy framework for goal-oriented execution
  */
-@ShellComponent
+@Component
 class MetaAgentShellCommands(
     private val metaAgent: MetaAgent,
     private val autonomy: Autonomy
@@ -99,10 +98,10 @@ class MetaAgentShellCommands(
      * @param specFile Path to a spec file; resolved relative to CWD when not absolute
      * @return Agent specification summary or delegation result
      */
-    @ShellMethod("Design a new agent from requirements")
+    @Command(description = "Design a new agent from requirements")
     fun design(
-        @ShellOption(defaultValue = ShellOption.NULL) intent: String?,
-        @ShellOption(defaultValue = ShellOption.NULL, value = ["--spec-file", "-f"]) specFile: String?,
+        @Option intent: String?,
+        @Option(longName = "spec-file", shortName = 'f') specFile: String?,
     ): String {
         val resolvedIntent = resolveDesignIntent(intent, specFile)
             ?: return resolveDesignIntentError(intent, specFile)
@@ -162,7 +161,7 @@ class MetaAgentShellCommands(
      * 
      * @return Generated agent code or error message
      */
-    @ShellMethod("Generate agent code from specification")
+    @Command(description = "Generate agent code from specification")
     fun generate(): String {
         return try {
             // Delegate to MetaAgent through Autonomy framework using shared session
@@ -219,7 +218,7 @@ class MetaAgentShellCommands(
      * 
      * @return Test result or placeholder message
      */
-    @ShellMethod("Test generated agent functionality")
+    @Command(description = "Test generated agent functionality")
     fun test(): String {
         return "Test command not yet implemented. This will delegate to MetaAgent testing actions."
     }
@@ -232,7 +231,7 @@ class MetaAgentShellCommands(
      *
      * @return Recovery result or placeholder message
      */
-    @ShellMethod("Recover from compilation errors")
+    @Command(description = "Recover from compilation errors")
     fun recover(): String {
         return "Recovery command not yet implemented. This will delegate to MetaAgent error recovery actions."
     }
@@ -252,7 +251,7 @@ class MetaAgentShellCommands(
      *
      * @return Generated tool skeleton or status message
      */
-    @ShellMethod("Generate tool skeletons matching agent actions")
+    @Command(description = "Generate tool skeletons matching agent actions")
     fun genTools(): String {
         // Get GeneratedAgentModel from blackboard
         val process = lastAgentProcess
@@ -467,7 +466,7 @@ $methods
      * @param intent Natural language request
      * @return Agent response
      */
-    @ShellMethod("Chat with agents - autonomy chooses the right agent")
+    @Command(description = "Chat with agents - autonomy chooses the right agent")
     fun ask(intent: String): String {
         logger.info("🔍 Ask command received intent: '$intent'")
 
@@ -513,7 +512,7 @@ $methods
      *
      * @return Meta-agent status information
      */
-    @ShellMethod("Show meta-agent status")
+    @Command(description = "Show meta-agent status")
     fun status(): String {
         return "Meta-Agent Status:\n" +
                "- Agent Name: ${metaAgent.javaClass.simpleName}\n" +
