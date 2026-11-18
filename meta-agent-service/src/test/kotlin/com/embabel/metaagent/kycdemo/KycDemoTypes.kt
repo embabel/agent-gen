@@ -1,7 +1,9 @@
 package com.embabel.metaagent.kycdemo
 
+import com.fasterxml.jackson.annotation.JsonSetter
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.annotation.Nulls
 import java.math.BigDecimal
 import java.time.Instant
 import java.time.LocalDate
@@ -46,6 +48,7 @@ data class Person(
     override val id: String,
     override val displayName: String,
     val dateOfBirth: LocalDate? = null,
+    @JsonSetter(nulls = Nulls.AS_EMPTY)
     val nationalities: Set<String> = emptySet(),
     val addresses: List<Address> = emptyList(),
     override val roles: Set<PartyRole> = emptySet(),

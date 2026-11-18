@@ -138,6 +138,7 @@ class KycEmbabelLlmExtractionIntegrationTest {
             Use those ids consistently in ownership.ownerPartyId, ownership.ownedPartyId, and screeningResults.partyId.
             Evidence page numbers are 1-based. If a source chunk has no page number, use page 1, never 0.
             Include seniorPublicFigure=true when a document says the person is a senior public figure.
+            For any SPF/PEP, populate pepProfile.publicOffice with the exact office title as written in the source document.
             Assign party roles only when supported by the supplied chunks.
             If any beneficial owner, director, signatory, or customer is an SPF/PEP and no source-of-wealth
             evidence is supplied, set overallRisk=HIGH, recommendation=ENHANCED_DUE_DILIGENCE,
